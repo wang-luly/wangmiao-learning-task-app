@@ -19,6 +19,7 @@ export class TaskDatabase{
          id TEXT PRIMARY KEY,
          name TEXT,
          dueTime INTEGER,
+         priority INTEGER,
          isFinished INTEGER
        )
       `
@@ -35,6 +36,7 @@ export class TaskDatabase{
         id:task.id,
         name:task.name,
         dueTime:task.dueTime.getTime(),
+        priority:task.priority,
         isFinished:task.isFinished?1:0
       }
     )
@@ -53,6 +55,7 @@ export class TaskDatabase{
         id:result.getString(result.getColumnIndex('id')),
         name:result.getString(result.getColumnIndex('name')),
         dueTime:new Date(result.getLong(result.getColumnIndex('dueTime'))),
+        priority:result.getLong(result.getColumnIndex('priority')),
         isFinished:result.getLong(result.getColumnIndex('isFinished'))==1
       })
     }
@@ -68,6 +71,21 @@ export class TaskDatabase{
     //设置删除条件
     predicates.equalTo('id',id)
     await this.store.delete(predicates)
+  }
+  //修改数据函数------------------------------------------------------
+  async updateTask(task:TaskItem){
+    if(!this.store) return
+    let predicate=new relationalStore.RdbPredicates('task')
+    predicate.equalTo('id',task.id)
+    await this.store.update(
+      {
+        name:task.name,
+        dueTime:task.dueTime.getTime(),
+        priority:task.priority,
+        isFinished:task.isFinished
+      },
+      predicate
+    )
   }
 
 }

@@ -1,11 +1,17 @@
+import {Priority, TaskItem} from "../model/TaskItem";
+
+
 @CustomDialog
 export struct AddTaskDialog{
   //弹窗控制器用来控制弹窗是否关闭
   controller:CustomDialogController
-  @State taskName:string=''
+  @State taskName:string=''//任务名
   @State dueTime:Date=new Date()//选择的时间
   @State startTime:Date=new Date()//可供选择的起始时间
-  @State endTime:Date=new Date()
+  @State endTime:Date=new Date()//可供选择的结束时间
+  @State priority:number=Priority.LOW//默认低优先级
+  editingTask:TaskItem|null=null
+  priorityList:SelectOption[]=[{value:"低"},{value:"中"},{value:"高"}]//优先级选择列表
 
   //生命周期(钩子)函数---------------------------
   aboutToAppear(): void {
@@ -13,15 +19,21 @@ export struct AddTaskDialog{
     this.startTime=new Date(now)
     this.endTime=new Date(now)
     this.endTime.setFullYear(this.endTime.getFullYear()+1)
+    //如果是编辑模式，则显示原任务参数
+    if(this.editingTask){
+      this.taskName=this.editingTask.name
+      this.dueTime=this.editingTask.dueTime
+      this.priority=this.editingTask.priority
+    }
   }
-  //点击确定后的回调函数
-  @Prop confirm:(taskName:string,dueTime:Date)=>void = ()=>{}
+  //点击确定后的回调函数，不能加prop
+  confirm:(taskName:string,dueTime:Date,priority:number)=>void = ()=>{}
   //--------------------------------build---------------------------------------
 
   build() {
     Column({space:20}){
       //标题
-      Text("创建任务")
+      Text(this.editingTask?"编辑任务":"创建任务")
         .fontSize(22)
         .fontWeight(FontWeight.Bold)
       //输入框
@@ -52,6 +64,17 @@ export struct AddTaskDialog{
         .backgroundColor("#F5F6F7")
         .borderRadius(12)
       }
+      //优先级选择
+      Row(){
+        Text("优先级")
+          .width("30%")
+        Select(this.priorityList)
+          .selected(this.priority)
+          .value(this.priorityList[this.priority].value)
+          .onSelect((index:number)=>{
+            this.priority=index
+          })
+      }
 
       //按钮区域
       Row({space:20}){
@@ -60,7 +83,7 @@ export struct AddTaskDialog{
         })
         Button("确定").onClick((event: ClickEvent) => {
           //调用外部函数,因为避免让dialog需要依赖taskList
-          this.confirm(this.taskName,this.dueTime)
+          this.confirm(this.taskName,this.dueTime,this.priority)
           //关闭弹窗
           this.controller.close()
         })
