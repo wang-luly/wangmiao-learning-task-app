@@ -1,6 +1,9 @@
 //首页大框架
-import { DetailsPage } from './DetailsPage'
 import { TaskListPage } from './TaskListPage'
+import {TimingPage} from './TimingPage'
+import {CountPage} from "./CountPage";
+
+
 
 @Entry
 @Component
@@ -9,7 +12,7 @@ struct Index {
 
   build() {
     Column(){
-      //底部首页，详情页tab
+      //底部任务页，计时学习页，统计页tab
       Tabs({index:this.currentTab,barPosition:BarPosition.End}){
         //首页
         TabContent(){
@@ -17,9 +20,13 @@ struct Index {
         }
         .tabBar("任务")
         TabContent(){
-          DetailsPage()//详情页
+          TimingPage()//计时页
         }
-        .tabBar("详情")
+        .tabBar("计时")
+        TabContent(){
+          CountPage()//统计页
+        }
+        .tabBar("统计")
       }
       .scrollable(false)
       .onChange((index:number)=>{

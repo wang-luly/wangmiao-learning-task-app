@@ -1,15 +1,13 @@
-import { taskCategory } from "../model/TaskItem"
-
 @CustomDialog
 export struct AddTaskDialog{
   //弹窗控制器用来控制弹窗是否关闭
   controller:CustomDialogController
   @State taskName:string=''
   @State dueTime:Date=new Date()//选择的时间
-  @State category:taskCategory='学习'
   @State startTime:Date=new Date()//可供选择的起始时间
   @State endTime:Date=new Date()
-  //生命周期(钩子)函数
+
+  //生命周期(钩子)函数---------------------------
   aboutToAppear(): void {
     let now=new Date()
     this.startTime=new Date(now)
@@ -17,8 +15,8 @@ export struct AddTaskDialog{
     this.endTime.setFullYear(this.endTime.getFullYear()+1)
   }
   //点击确定后的回调函数
-  confirm:(taskName:string,dueTime:Date)=>void = ()=>{}
-  //-----------------------------------------------------------------------
+  @Prop confirm:(taskName:string,dueTime:Date)=>void = ()=>{}
+  //--------------------------------build---------------------------------------
 
   build() {
     Column({space:20}){
