@@ -6,6 +6,8 @@ import {AddTaskDialog} from "../components/AddTaskDialog"
 import { TaskCard } from "../components/TaskCard";
 import { taskDB } from "../database/TaskDatabase";
 
+
+
 @Component
 export struct TaskListPage {
   //控制是今日还是所有任务
@@ -15,33 +17,70 @@ export struct TaskListPage {
   //测试任务列表展示
   @State todayTaskList: TaskItem[] = []
   @State allTaskList: TaskItem[] =[]
+  //编辑任务
+  @State editingTask:TaskItem|null=null
   //学习任务弹窗控制器
-  studyDialogController:CustomDialogController=
-    new CustomDialogController({
-      builder:AddTaskDialog({//将AddTaskDialog绑定给这个控制器
-        confirm:async (taskName:string,dueTime:Date)=>{
-          //创建任务对象
-          let newTask:TaskItem={
-            id:util.generateRandomUUID(),
-            dueTime:dueTime,
-            name:taskName,
-            isFinished:false
+  studyDialogController:CustomDialogController|null=null
+  //初始化弹窗
+  initTaskDialog(){
+    this.studyDialogController=new CustomDialogController({
+      builder:AddTaskDialog({
+        editingTask:this.editingTask,
+        confirm:async (taskName:string,dueTime:Date,priority:number)=>{
+          //编辑任务
+          if(this.editingTask){
+            let updated:TaskItem={
+              id:this.editingTask.id,
+              name:taskName,
+              dueTime:dueTime,
+              priority:priority,
+              isFinished:this.editingTask.isFinished
+            }
+            await taskDB.updateTask(updated)
+            this.allTaskList=this.allTaskList.map((t)=>{
+              return t.id==updated.id?updated:t
+            })
+          }else{//否则的话就是新增任务，用之前写好的新增任务逻辑
+            let newTask:TaskItem={
+              id:util.generateRandomUUID(),
+              dueTime:dueTime,
+              name:taskName,
+              priority:priority,
+              isFinished:false
+            }
+            await taskDB.insertTask(newTask)
+            this.allTaskList.push(newTask)
           }
-          //添加到数据库
-          await taskDB.insertTask(newTask)
-          //添加到所有任务
-          this.allTaskList.push(newTask)
-          //判断是否加入到今日任务
-          if(this.isToday(newTask.dueTime)){
-            this.todayTaskList.push(newTask)
-          }
-          //刷新
+          this.todayTaskList=this.allTaskList.filter((item)=>{
+            return this.isToday(item.dueTime)
+          })
           this.allTaskList=[...this.allTaskList]
           this.todayTaskList=[...this.todayTaskList]
+          this.editingTask=null
         }
-      })
+      }),
+      autoCancel:true,
+      alignment:DialogAlignment.Center
     })
-  //顶部按钮
+  }
+  //打开新增弹窗
+  openAddDialog(){
+    this.editingTask=null
+    this.studyDialogController?.open()
+  }
+  //打开编辑弹窗（与新增弹窗是同一个）
+  openEditDialog(task:TaskItem){
+    this.editingTask=task
+    this.studyDialogController?.open()
+  }
+  @Styles//顶部按钮style
+  topButtonStyle(){
+  .width(100)
+  .height(40)
+  .backgroundColor("rgba(255,255,255,0.7)")
+  .borderRadius(25)
+}
+  //顶部按钮builder
   @Builder
   topButton(title:string,tar:number,click:()=>void){
     Button() {
@@ -56,17 +95,14 @@ export struct TaskListPage {
           .fontWeight(FontWeight.Medium)
       }
     }
-    .width(100)
-    .height(40)
-    .backgroundColor("rgba(255,255,255,0.7)")
     //按键切换特效
     .border({
       width:this.taskNum==tar?2:0,//一直都是红色，只不过控制宽度控制显示或者是不显示
       color:Color.Red
     })
-    .borderRadius(25)
+    .topButtonStyle()
     .onClick(()=>{
-      this.taskNum=tar
+      click()
     })
   }
 //-------------------------------------------------------函数-----------------------------------------------
@@ -80,6 +116,8 @@ export struct TaskListPage {
     this.todayTaskList=this.allTaskList.filter(item=>{
       return this.isToday(item.dueTime)
     })
+    //初始化，使得弹窗控制器为空
+    this.initTaskDialog()
   }
   //判断是否是今日的函数
   isToday(time:Date):boolean{
@@ -111,29 +149,13 @@ export struct TaskListPage {
           })
 
           //添加任务按钮
-          Button() {
-            Row() {
-              Image($r("app.media.fish"))
-                .width(40)
-                .height(40)
-              Text("添加")
-                .fontColor(Color.White)
-                .fontSize(16)
-                .fontColor(Color.Black)
-                .fontWeight(FontWeight.Medium)
-            }
-          }
-          .width(100)
-          .height(40)
-          .backgroundColor("rgba(255,255,255,0.7)")
-            .onClick((event: ClickEvent) => {
-              this.studyDialogController.open()
+          this.topButton("添加",-1,()=>{
+            this.openAddDialog()
           })
-
         }
 
 //-------------------------------------------------list展示------------------------------------------------------
-        //任务列表展示
+        //任务列表展示todo:按优先级排序和截止日期筛选
           List(){
             //学习任务标题
             ListItem(){
@@ -160,9 +182,12 @@ export struct TaskListPage {
             if(this.isStudyExpand){
               ForEach(this.taskNum==0?this.todayTaskList:this.allTaskList,(item:TaskItem)=>{
                 ListItem(){
-                  //将学习任务卡片分离到components
+                  //将学习任务卡片分离到子组件TaskCard
                   TaskCard({
                     task:item,
+                    updateClick:async ()=>{
+                      this.openEditDialog(item)
+                    },
                     deleteClick:async ()=>{
                       //删除数据库
                       await taskDB.deleteTask(item.id)
