@@ -15,14 +15,15 @@ export struct TaskCard {//TaskListPage的子组件
     Row(){
       //名称和截止时间放在一个Column中
       Column({space:10}){
-        Row({space:20}){
           Text(this.task.name)
-          Text(getPriorityText(this.task.priority))
-        }
         Text(formatTime(this.task.dueTime))
       }
       .alignItems(HorizontalAlign.Start)
       .margin({left:10})
+      .width("30%")
+      //优先级写在一个column中
+      Text(getPriorityText(this.task.priority))
+        .margin({left:10})
       Blank()
       //编辑按钮
       Button("编辑")
@@ -39,9 +40,9 @@ export struct TaskCard {//TaskListPage的子组件
           this.deleteClick()
       })
     }
+    .padding(10)
     .borderRadius(25)
     .width("100%")
-    .height(80)
     .backgroundColor(Color.Yellow)
   }
 }

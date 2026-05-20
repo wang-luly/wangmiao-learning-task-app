@@ -5,7 +5,7 @@ import { util } from "@kit.ArkTS";
 import {AddTaskDialog} from "../components/AddTaskDialog"
 import { TaskCard } from "../components/TaskCard";
 import { taskDB } from "../database/TaskDatabase";
-
+import { setPriorityDesc,setPriorityAsc } from "../utils/setPriority";
 
 
 @Component
@@ -14,6 +14,8 @@ export struct TaskListPage {
   @State taskNum:number=0
   //控制学习任务是否展示,实现下拉框
   @State isStudyExpand:boolean=false
+  //控制升序排序还是降序排序
+  @State isDesc:boolean=true
   //测试任务列表展示
   @State todayTaskList: TaskItem[] = []
   @State allTaskList: TaskItem[] =[]
@@ -56,6 +58,8 @@ export struct TaskListPage {
           })
           this.allTaskList=[...this.allTaskList]
           this.todayTaskList=[...this.todayTaskList]
+          //点击确定按钮后对任务按优先级排序
+          this.applyPriority()
           this.editingTask=null
         }
       }),
@@ -116,6 +120,8 @@ export struct TaskListPage {
     this.todayTaskList=this.allTaskList.filter(item=>{
       return this.isToday(item.dueTime)
     })
+    //得到任务后排序
+    this.applyPriority()
     //初始化，使得弹窗控制器为空
     this.initTaskDialog()
   }
@@ -125,6 +131,25 @@ export struct TaskListPage {
     return time.getFullYear()==nowDate.getFullYear()
     &&time.getMonth()==nowDate.getMonth()
     &&time.getDate()==nowDate.getDate()
+  }
+  //按从priority从高到低排序
+  applyPriority(){
+    if(this.isDesc){
+      //所有任务降序排序
+      this.allTaskList = setPriorityDesc(this.allTaskList)
+      //今日任务排序
+      this.todayTaskList=setPriorityDesc(this.allTaskList.filter((item)=>{
+        return this.isToday(item.dueTime)
+      }))
+    }
+    else{
+      //所有任务降序排序
+      this.allTaskList = setPriorityAsc(this.allTaskList)
+      //今日任务排序
+      this.todayTaskList=setPriorityAsc(this.allTaskList.filter((item)=>{
+        return this.isToday(item.dueTime)
+      }))
+    }
   }
 
 //-------------------------------------------------------build----------------------------------------
@@ -153,15 +178,21 @@ export struct TaskListPage {
             this.openAddDialog()
           })
         }
-
+//todo:按截止日期筛选
 //-------------------------------------------------list展示------------------------------------------------------
-        //任务列表展示todo:按优先级排序和截止日期筛选
           List(){
             //学习任务标题
             ListItem(){
               Row(){
                 Text("学习任务")
                 Row({space:10}){
+                  //排序图片
+                  Image(this.isDesc?$r('app.media.Desc'):$r('app.media.Asc'))
+                    .width(30)
+                    .onClick(()=>{
+                      this.isDesc=!this.isDesc
+                      this.applyPriority()
+                    })
                   //展开图片>
                   Image(this.isStudyExpand?$r("app.media.down"):$r("app.media.right"))
                     .width(30)
@@ -199,6 +230,8 @@ export struct TaskListPage {
                       this.todayTaskList=this.todayTaskList.filter((task)=>{
                         return task.id != item.id
                       })
+                      //删除完后对task按优先级排序
+                      this.applyPriority()
                     }
                   })
                 }
