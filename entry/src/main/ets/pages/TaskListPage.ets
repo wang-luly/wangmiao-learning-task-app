@@ -6,9 +6,6 @@ import { TaskCard } from "../components/TaskCard";
 import { taskDB } from "../database/TaskDatabase";
 import { SortTask } from "../utils/SortTask";
 
-
-//todo:任务名不能为空
-
 @Component
 export struct TaskListPage {
   //控制是今日还是所有任务
@@ -32,6 +29,15 @@ export struct TaskListPage {
       builder:AddTaskDialog({
         editingTask:this.editingTask,
         confirm:async (taskName:string,dueTime:Date,priority:number)=>{
+          //任务名不能为空
+          if(!taskName||taskName.trim().length==0){
+            //弹出toast
+            this.getUIContext().getPromptAction().showToast({
+              message:'任务名不能为空'
+            })
+            //阻止继续执行
+            return
+          }
           //通过editingTask是否为空来判断是编辑任务还是新增任务
           //编辑任务
           if(this.editingTask){
@@ -265,19 +271,23 @@ export struct TaskListPage {
                     updateClick:async ()=>{
                       this.openEditDialog(item)//编辑时，传入历史参数
                     },
-                    deleteClick:async ()=>{
+                    deleteClick:async ()=> {
                       //删除数据库
                       await taskDB.deleteTask(item.id)
                       //删除所有任务中的该任务（用过滤器）
-                      this.allTaskList=this.allTaskList.filter((task)=>{
-                        return task.id!=item.id
+                      this.allTaskList = this.allTaskList.filter((task) => {
+                        return task.id != item.id
                       })
                       //删除今日任务中的该任务（filter）
-                      this.todayTaskList=this.todayTaskList.filter((task)=>{
+                      this.todayTaskList = this.todayTaskList.filter((task) => {
                         return task.id != item.id
                       })
                       //删除完后对task按优先级排序
                       this.applyPriority()
+                    },
+                    finishTask:async ()=>{
+                      item.isFinished=true
+                      await taskDB.updateTask(item)
                     }
                   })
                 }

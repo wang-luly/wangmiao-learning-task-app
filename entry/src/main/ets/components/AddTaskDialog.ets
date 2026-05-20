@@ -82,6 +82,12 @@ export struct AddTaskDialog{
           this.controller.close()
         })
         Button("确定").onClick((event: ClickEvent) => {
+          if(!this.taskName||this.taskName.trim().length==0){
+            this.getUIContext().getPromptAction().showToast({
+              message:'无法创建，你还没有输入任务名哦'
+            })
+            return
+          }
           //调用外部函数,因为避免让dialog需要依赖taskList
           this.confirm(this.taskName,this.dueTime,this.priority)
           //关闭弹窗
