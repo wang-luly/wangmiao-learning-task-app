@@ -1,12 +1,13 @@
 //任务页
 import { TaskItem } from "../model/TaskItem";
-import { StartOptions } from "@kit.AbilityKit";
 import { util } from "@kit.ArkTS";
 import {AddTaskDialog} from "../components/AddTaskDialog"
 import { TaskCard } from "../components/TaskCard";
 import { taskDB } from "../database/TaskDatabase";
-import { setPriorityDesc,setPriorityAsc } from "../utils/setPriority";
+import { SortTask } from "../utils/SortTask";
 
+
+//todo:任务名不能为空
 
 @Component
 export struct TaskListPage {
@@ -21,14 +22,17 @@ export struct TaskListPage {
   @State allTaskList: TaskItem[] =[]
   //编辑任务
   @State editingTask:TaskItem|null=null
+  //当前筛选日期，空表示所有
+  @State filterDate:Date|null=null
   //学习任务弹窗控制器
   studyDialogController:CustomDialogController|null=null
-  //初始化弹窗
+  //初始化对话框弹窗
   initTaskDialog(){
     this.studyDialogController=new CustomDialogController({
       builder:AddTaskDialog({
         editingTask:this.editingTask,
         confirm:async (taskName:string,dueTime:Date,priority:number)=>{
+          //通过editingTask是否为空来判断是编辑任务还是新增任务
           //编辑任务
           if(this.editingTask){
             let updated:TaskItem={
@@ -110,7 +114,7 @@ export struct TaskListPage {
     })
   }
 //-------------------------------------------------------函数-----------------------------------------------
-  //生命周期函数（只执行一次）
+  //TaskListPage生命周期函数（只执行一次）
   async aboutToAppear() {
     //初始化数据库
     await taskDB.init(this.getUIContext().getHostContext() as Context)
@@ -122,7 +126,7 @@ export struct TaskListPage {
     })
     //得到任务后排序
     this.applyPriority()
-    //初始化，使得弹窗控制器为空
+    //初始化，使得弹窗控制器不为空
     this.initTaskDialog()
   }
   //判断是否是今日的函数
@@ -132,26 +136,32 @@ export struct TaskListPage {
     &&time.getMonth()==nowDate.getMonth()
     &&time.getDate()==nowDate.getDate()
   }
-  //按从priority从高到低排序
-  applyPriority(){
-    if(this.isDesc){
-      //所有任务降序排序
-      this.allTaskList = setPriorityDesc(this.allTaskList)
-      //今日任务排序
-      this.todayTaskList=setPriorityDesc(this.allTaskList.filter((item)=>{
-        return this.isToday(item.dueTime)
-      }))
-    }
-    else{
-      //所有任务降序排序
-      this.allTaskList = setPriorityAsc(this.allTaskList)
-      //今日任务排序
-      this.todayTaskList=setPriorityAsc(this.allTaskList.filter((item)=>{
-        return this.isToday(item.dueTime)
-      }))
-    }
+  //判断是否是同一天
+  isSameDay(date1:Date,date2:Date):boolean{
+    return date1.getFullYear()==date2.getFullYear()
+      && date1.getMonth()==date2.getMonth()
+      && date1.getDate()==date2.getDate()
   }
-
+  //按截止日期筛选函数，仅针对allTaskList
+  filterDueTime():TaskItem[]{
+    //显示所有==null
+    if(!this.filterDate){
+      return this.allTaskList
+    }
+    //显示当前筛选日期任务
+    return this.allTaskList.filter((item)=>{
+      return this.isSameDay(item.dueTime,this.filterDate!)
+    })
+  }
+  //排序函数：通过isDesc判断是升序还是降序
+  applyPriority() {
+    //所有任务排序
+    this.allTaskList = SortTask(this.allTaskList,this.isDesc)
+    //今日任务排序
+    this.todayTaskList = SortTask(this.allTaskList.filter((item) => {
+      return this.isToday(item.dueTime)
+    }),this.isDesc)
+  }
 //-------------------------------------------------------build----------------------------------------
   build() {
     Stack(){
@@ -178,14 +188,19 @@ export struct TaskListPage {
             this.openAddDialog()
           })
         }
-//todo:按截止日期筛选
 //-------------------------------------------------list展示------------------------------------------------------
           List(){
-            //学习任务标题
+            //学习任务标题---------------------
             ListItem(){
               Row(){
                 Text("学习任务")
                 Row({space:10}){
+                  //展开图片>
+                  Image(this.isStudyExpand?$r("app.media.down"):$r("app.media.right"))
+                    .width(30)
+                    .onClick(()=>{
+                      this.isStudyExpand=!this.isStudyExpand
+                    })
                   //排序图片
                   Image(this.isDesc?$r('app.media.Desc'):$r('app.media.Asc'))
                     .width(30)
@@ -193,31 +208,62 @@ export struct TaskListPage {
                       this.isDesc=!this.isDesc
                       this.applyPriority()
                     })
-                  //展开图片>
-                  Image(this.isStudyExpand?$r("app.media.down"):$r("app.media.right"))
-                    .width(30)
-                    .onClick(()=>{
-                      this.isStudyExpand=!this.isStudyExpand
-                    })
+                  //如果是所有任务，显示按截止日期筛选的图片
+                  if(this.taskNum==1){
+                    Image($r('app.media.filter'))
+                      .width(30)
+                      .onClick(()=>{
+                        //获取promptAction对象
+                        let promptAction=this.getUIContext().getPromptAction()
+                        //显示操作菜单
+                        promptAction.showDialog({
+                          //标题
+                          title:'截止日期选择',
+                          message:'请选择筛选方式',
+                          //按钮
+                          buttons:[{text:'所有时间',color:'#000'},{text:'选择日期',color:'#000'}]
+                        },(err,data)=>{
+                          if(data.index==0){
+                            this.filterDate=null
+                          }
+                          else if(data.index==1){
+                            //设置终止日期为一年后的今天
+                            let endDate=new Date()
+                            endDate.setFullYear(endDate.getFullYear()+1)
+                            //弹出日期选择框
+                            this.getUIContext().showDatePickerDialog({
+                              start:new Date(),
+                              end:endDate,
+                              selected:this.filterDate??new Date(),
+                              onDateAccept:(value:Date)=>{
+                                this.filterDate=value
+                              }
+                            })
+                          }
+                        }
+                        )
+                      })
+                  }
                 }
                   .margin({right:10})
               }
-                .justifyContent(FlexAlign.SpaceBetween)
+                .justifyContent(FlexAlign.SpaceBetween)//分为两侧
                 .backgroundColor(Color.Green)
                 .width("100%")
                 .height(50)
+                .padding({left:10,right:10})
             }
             .margin({top:10})
 
-            //学习任务列表
+            //学习任务列表-------------------------------
             if(this.isStudyExpand){
-              ForEach(this.taskNum==0?this.todayTaskList:this.allTaskList,(item:TaskItem)=>{
+              ForEach(this.taskNum==0?this.todayTaskList:this.filterDueTime(),(item:TaskItem)=>{
                 ListItem(){
-                  //将学习任务卡片分离到子组件TaskCard
+                  //TaskCard
                   TaskCard({
                     task:item,
                     updateClick:async ()=>{
-                      this.openEditDialog(item)
+                      this.openEditDialog(item)//编辑时，传入历史参数
                     },
                     deleteClick:async ()=>{
                       //删除数据库
