@@ -39,27 +39,27 @@ export struct TaskListPage {
             return
           }
           //通过editingTask是否为空来判断是编辑任务还是新增任务
-          //编辑任务
+          //编辑任务(taskItem对象)
           if(this.editingTask){
-            let updated:TaskItem={
-              id:this.editingTask.id,
-              name:taskName,
-              dueTime:dueTime,
-              priority:priority,
-              isFinished:this.editingTask.isFinished
-            }
+            let updated=new TaskItem()
+
+            updated.id=this.editingTask.id
+            updated.name=taskName
+            updated.dueTime=dueTime
+            updated.priority=priority
+            updated.isFinished=this.editingTask.isFinished
+
             await taskDB.updateTask(updated)
             this.allTaskList=this.allTaskList.map((t)=>{
               return t.id==updated.id?updated:t
             })
           }else{//否则的话就是新增任务，用之前写好的新增任务逻辑
-            let newTask:TaskItem={
-              id:util.generateRandomUUID(),
-              dueTime:dueTime,
-              name:taskName,
-              priority:priority,
-              isFinished:false
-            }
+            let newTask=new TaskItem()
+            newTask.id=util.generateRandomUUID()
+            newTask.dueTime=dueTime
+            newTask.name=taskName
+            newTask.priority=priority
+            newTask.isFinished=false
             await taskDB.insertTask(newTask)
             this.allTaskList.push(newTask)
           }
@@ -124,8 +124,17 @@ export struct TaskListPage {
   async aboutToAppear() {
     //初始化数据库
     await taskDB.init(this.getUIContext().getHostContext() as Context)
-    //查询全部任务
-    this.allTaskList=await taskDB.queryAllTask()
+    //查询全部任务(taskItem对象版,@Observed)
+    let result=await taskDB.queryAllTask()
+    this.allTaskList=result.map((item)=>{
+      let task=new TaskItem()
+      task.id=item.id
+      task.name=item.name
+      task.dueTime=item.dueTime
+      task.priority=item.priority
+      task.isFinished=item.isFinished
+      return task
+    })
     //筛选今日任务
     this.todayTaskList=this.allTaskList.filter(item=>{
       return this.isToday(item.dueTime)

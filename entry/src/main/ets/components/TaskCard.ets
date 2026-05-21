@@ -4,7 +4,7 @@ import {formatTime} from "../utils/TimeUtils";
 
 @Component
 export struct TaskCard {//TaskListPage的子组件
-  @Prop task:TaskItem
+  @ObjectLink task:TaskItem
   //-------------------------------------------函数--------------------------------------------
   //用回调函数实现删除数据
   deleteClick:()=>void=()=>{}
@@ -40,7 +40,6 @@ export struct TaskCard {//TaskListPage的子组件
           this.updateClick()
         })
       //完成按钮
-      //todo:点击完成无法立刻刷新ui
       Button("完成").onClick((event: ClickEvent) => {
         this.finishTask()
       })

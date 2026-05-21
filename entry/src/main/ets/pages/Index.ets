@@ -19,10 +19,7 @@ struct Index {
           TaskListPage()//任务页
         }
         .tabBar("任务")
-        TabContent(){
-          TimingPage()//计时页
-        }
-        .tabBar("计时")
+
         TabContent(){
           CountPage()//统计页
         }
