@@ -5,6 +5,8 @@ import {AddTaskDialog} from "../components/AddTaskDialog"
 import { TaskCard } from "../components/TaskCard";
 import { taskDB } from "../database/TaskDatabase";
 import { SortTask } from "../utils/SortTask";
+import { TaskDetailDialog } from "../components/TaskDetailDialog";
+import { taskStore,TaskStore } from "../model/TaskStore";
 
 @Component
 export struct TaskListPage {
@@ -14,13 +16,41 @@ export struct TaskListPage {
   @State isStudyExpand:boolean=false
   //控制升序排序还是降序排序
   @State isDesc:boolean=true
-  //测试任务列表展示
-  @State todayTaskList: TaskItem[] = []
-  @State allTaskList: TaskItem[] =[]
+  //全局单例任务列表展示
+  @State store:TaskStore=taskStore
   //编辑任务
   @State editingTask:TaskItem|null=null
   //当前筛选日期，空表示所有
   @State filterDate:Date|null=null
+  //当前任务对象
+  @State currentTask:TaskItem|null=null
+  //任务详情弹窗控制器
+  detailDialogController:CustomDialogController|null=null
+  //初始化详情弹窗控制器
+  initDetailDialog(){
+    this.detailDialogController=new CustomDialogController({
+      builder:TaskDetailDialog({
+        task:this.currentTask,
+        //编辑回调函数
+        editClick:()=>{
+          this.detailDialogController?.close()
+          this.openEditDialog(this.currentTask!)
+        },
+        //完成回调函数
+        finishClick:()=>{
+          this.currentTask!.isFinished=true
+          this.store.updateTask(this.currentTask!)
+          this.detailDialogController?.close()
+        },
+        //删除回调函数
+        deleteClick:()=>{
+          this.store.removeTask(this.currentTask!.id)
+          this.currentTask=null
+          this.detailDialogController?.close()
+        }
+      })
+    })
+  }
   //学习任务弹窗控制器
   studyDialogController:CustomDialogController|null=null
   //初始化对话框弹窗
@@ -49,10 +79,7 @@ export struct TaskListPage {
             updated.priority=priority
             updated.isFinished=this.editingTask.isFinished
 
-            await taskDB.updateTask(updated)
-            this.allTaskList=this.allTaskList.map((t)=>{
-              return t.id==updated.id?updated:t
-            })
+            await this.store.updateTask(updated)
           }else{//否则的话就是新增任务，用之前写好的新增任务逻辑
             let newTask=new TaskItem()
             newTask.id=util.generateRandomUUID()
@@ -60,16 +87,11 @@ export struct TaskListPage {
             newTask.name=taskName
             newTask.priority=priority
             newTask.isFinished=false
-            await taskDB.insertTask(newTask)
-            this.allTaskList.push(newTask)
+            await this.store.addTask(newTask)
           }
-          this.todayTaskList=this.allTaskList.filter((item)=>{
-            return this.isToday(item.dueTime)
-          })
-          this.allTaskList=[...this.allTaskList]
-          this.todayTaskList=[...this.todayTaskList]
-          //点击确定按钮后对任务按优先级排序
+          //最后对任务按优先级排序
           this.applyPriority()
+          //将编辑任务置为null
           this.editingTask=null
         }
       }),
@@ -84,6 +106,7 @@ export struct TaskListPage {
   }
   //打开编辑弹窗（与新增弹窗是同一个）
   openEditDialog(task:TaskItem){
+    //这里让editingtask不为空
     this.editingTask=task
     this.studyDialogController?.open()
   }
@@ -124,25 +147,12 @@ export struct TaskListPage {
   async aboutToAppear() {
     //初始化数据库
     await taskDB.init(this.getUIContext().getHostContext() as Context)
-    //查询全部任务(taskItem对象版,@Observed)
-    let result=await taskDB.queryAllTask()
-    this.allTaskList=result.map((item)=>{
-      let task=new TaskItem()
-      task.id=item.id
-      task.name=item.name
-      task.dueTime=item.dueTime
-      task.priority=item.priority
-      task.isFinished=item.isFinished
-      return task
-    })
-    //筛选今日任务
-    this.todayTaskList=this.allTaskList.filter(item=>{
-      return this.isToday(item.dueTime)
-    })
+    //利用store单例从数据库加载任务
+    await this.store.loadTasks()
     //得到任务后排序
     this.applyPriority()
     //初始化，使得弹窗控制器不为空
-    this.initTaskDialog()
+    this.initTaskDialog()//添加编辑弹窗
   }
   //判断是否是今日的函数
   isToday(time:Date):boolean{
@@ -161,23 +171,24 @@ export struct TaskListPage {
   filterDueTime():TaskItem[]{
     //显示所有==null
     if(!this.filterDate){
-      return this.allTaskList
-    }
+      return this.store.tasks}
     //显示当前筛选日期任务
-    return this.allTaskList.filter((item)=>{
+    return this.store.tasks.filter((item)=>{
       return this.isSameDay(item.dueTime,this.filterDate!)
     })
   }
   //排序函数：通过isDesc判断是升序还是降序
   applyPriority() {
     //所有任务排序
-    this.allTaskList = SortTask(this.allTaskList,this.isDesc)
-    //今日任务排序
-    this.todayTaskList = SortTask(this.allTaskList.filter((item) => {
-      return this.isToday(item.dueTime)
-    }),this.isDesc)
+    this.store.tasks = SortTask([...this.store.tasks],this.isDesc)
   }
-//-------------------------------------------------------build----------------------------------------
+  //展示任务详情
+  showTaskDetail(task:TaskItem){
+    this.currentTask=task
+    this.initDetailDialog()//详情弹窗
+    this.detailDialogController?.open()
+  }
+//------------------------------------------UI----------------------------------------
   build() {
     Stack(){
       // 整个任务页的背景图
@@ -272,32 +283,15 @@ export struct TaskListPage {
 
             //学习任务列表-------------------------------
             if(this.isStudyExpand){
-              ForEach(this.taskNum==0?this.todayTaskList:this.filterDueTime(),(item:TaskItem)=>{
+              ForEach(this.taskNum==0?this.store.tasks:this.filterDueTime(),(item:TaskItem)=>{
                 ListItem(){
                   //TaskCard
-                  TaskCard({
+                  TaskCard({//这是父组件传递给子组件TaskCard,task
                     task:item,
-                    updateClick:async ()=>{
-                      this.openEditDialog(item)//编辑时，传入历史参数
-                    },
-                    deleteClick:async ()=> {
-                      //删除数据库
-                      await taskDB.deleteTask(item.id)
-                      //删除所有任务中的该任务（用过滤器）
-                      this.allTaskList = this.allTaskList.filter((task) => {
-                        return task.id != item.id
-                      })
-                      //删除今日任务中的该任务（filter）
-                      this.todayTaskList = this.todayTaskList.filter((task) => {
-                        return task.id != item.id
-                      })
-                      //删除完后对task按优先级排序
-                      this.applyPriority()
-                    },
-                    finishTask:async ()=>{
-                      item.isFinished=true
-                      await taskDB.updateTask(item)
-                    }
+                  //详情点击
+                    detailClick:async ()=>{
+                      this.showTaskDetail(item)
+                     }
                   })
                 }
                 .margin({left:10,right:10,top:5})

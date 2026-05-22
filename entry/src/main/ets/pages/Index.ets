@@ -3,8 +3,6 @@ import { TaskListPage } from './TaskListPage'
 import {TimingPage} from './TimingPage'
 import {CountPage} from "./CountPage";
 
-
-
 @Entry
 @Component
 struct Index {

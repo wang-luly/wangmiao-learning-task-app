@@ -1,4 +1,5 @@
 import relationalStore from '@ohos.data.relationalStore';
+import { StudyRecord } from '../model/StudyRecord';
 import { TaskItem } from '../model/TaskItem';
 
 export class TaskDatabase{
@@ -12,7 +13,7 @@ export class TaskDatabase{
       securityLevel:relationalStore.SecurityLevel.S1
     }
     this.store=await relationalStore.getRdbStore(context,config)
-    //创建任务表
+    //创建任务表:注意isFinished是数字类型
     await this.store.executeSql(
       `
        CREATE TABLE IF NOT EXISTS task(
@@ -20,8 +21,20 @@ export class TaskDatabase{
          name TEXT,
          dueTime INTEGER,
          priority INTEGER,
-         isFinished INTEGER
+         isFinished INTEGER,
+         studyCount INTEGER,
+         studyMinute INTEGER
        )
+      `
+    )
+    await this.store.executeSql(
+      `
+         CREATE TABLE IF NOT EXISTS study_record(
+          id TEXT PRIMARY KEY,
+          taskId TEXT,
+          studyMinute INTEGER,
+          studyDate INTEGER
+         )
       `
     )
   }
@@ -37,10 +50,27 @@ export class TaskDatabase{
         name:task.name,
         dueTime:task.dueTime.getTime(),
         priority:task.priority,
-        isFinished:task.isFinished?1:0
+        isFinished:task.isFinished?1:0,
+        studyCount:task.studyCount,
+        studyMinute:task.studyMinute
       }
     )
   }
+  //根据id查询任务
+  async queryTaskById(id:string):Promise<TaskItem|null>{
+    //判断store是否为空
+    if(!this.store) return null
+    //根据id得到数据库读取指针
+    let result=await this.store.querySql(`SELECT * FROM task WHERE id=?`,[id])
+    if(result.rowCount==0){
+      return null
+    }
+    result.goToFirstRow()
+    let task=this.resultToTask(result)
+    result.close()
+    return task
+  }
+
   //查询所有任务函数---------------------------------------------
   async queryAllTask():Promise<TaskItem[]>{
     let taskList:TaskItem[]=[]
@@ -51,13 +81,8 @@ export class TaskDatabase{
       `SELECT * FROM task`
     )
     while(result.goToNextRow()){
-      taskList.push({
-        id:result.getString(result.getColumnIndex('id')),
-        name:result.getString(result.getColumnIndex('name')),
-        dueTime:new Date(result.getLong(result.getColumnIndex('dueTime'))),
-        priority:result.getLong(result.getColumnIndex('priority')),
-        isFinished:result.getLong(result.getColumnIndex('isFinished'))==1
-      })
+      let task=this.resultToTask(result)
+      taskList.push(task)
     }
     result.close()
     return taskList
@@ -82,10 +107,74 @@ export class TaskDatabase{
         name:task.name,
         dueTime:task.dueTime.getTime(),
         priority:task.priority,
-        isFinished:task.isFinished
+        isFinished:task.isFinished?1:0,
+        studyCount:task.studyCount,
+        studyMinute:task.studyMinute
       },
       predicate
     )
+  }
+  //查询结果转task对象
+  private resultToTask(result: relationalStore.ResultSet): TaskItem {
+    let task = new TaskItem()
+    task.id = result.getString(
+      result.getColumnIndex('id')
+    )
+    task.name = result.getString(
+      result.getColumnIndex('name')
+    )
+    task.dueTime = new Date(result.getLong(
+      result.getColumnIndex('dueTime')
+    ))
+    task.priority = result.getLong(
+      result.getColumnIndex('priority')
+    )
+    task.isFinished = result.getLong(result.getColumnIndex('isFinished'))==1
+    task.studyMinute = result.getLong(
+      result.getColumnIndex('studyMinute')
+    )
+    task.studyCount = result.getLong(
+      result.getColumnIndex('studyCount')
+    )
+    return task
+  }
+  //插入学习记录
+  async insertRecord(record:StudyRecord){
+    if(!this.store) return
+    await this.store.insert(
+      'study_record',
+      {
+        id:record.id,
+        taskId:record.taskId,
+        studyMinute:record.studyMinute,
+        studyDate:record.studyDate.getTime()
+      }
+    )
+  }
+  //查询今日学习总分钟
+  async queryTodayStudyMinute():Promise<number>{
+    if(!this.store) return 0
+    let start=new Date()
+    start.setHours(0)
+    start.setMinutes(0)
+    start.setSeconds(0)
+    start.setMilliseconds(0)
+    let end=new Date(start)
+    end.setDate(end.getDate()+1)
+    let result=await this.store.querySql(
+      `SELECT SUM(studyMinute) AS total FROM study_record WHERE studyDate>=? AND studyDate<=?`,
+      [start.getTime(),end.getTime()]
+    )
+
+    if(result.rowCount==0){
+      return 0
+    }
+    result.goToFirstRow()//来到学习记录表的第一行，也只有一行
+    let total=result.getLong(
+      result.getColumnIndex('total')
+    )
+    result.close()//别忘记关result
+    return total
   }
 
 }
