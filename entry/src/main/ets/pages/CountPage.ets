@@ -12,7 +12,7 @@ export struct CountPage {
   private ctx:CanvasRenderingContext2D=
     new CanvasRenderingContext2D(this.settings)
   //===============================函数======================================
-  async aboutToAppear(){//todo:这个到底什么时候执行
+  async aboutToAppear(){//每次到这个页面会执行一次
     //从数据库中获取今日学习总时长
     this.todayMinute=await taskDB.queryTodayStudyMinute()
     //从数据库中获取近七天学习时长
@@ -23,7 +23,7 @@ export struct CountPage {
   //=============================UI=============================================
   build() {
     Column({space:20}){
-      //今日学习进度------------------------------------
+      //今日学习进度/目标学习进度------------------------------------
       Column({space:10}){
         Text(`今日已学习 ${this.todayMinute} 分钟/目标 ${this.targetMinute} 分钟`)
           .fontSize(20)

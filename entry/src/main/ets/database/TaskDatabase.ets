@@ -183,7 +183,7 @@ export class TaskDatabase{
     let startTime=new Date()
     startTime.setDate(startTime.getDate()-6)
     startTime.setHours(0,0,0,0)
-    //todo:这里为什么要用const
+    //用const修饰锁定对象引用地址，不能再赋新的对象/值，但是内部属性可以改变
     const result=await this.store.querySql(
       `
         SELECT studyDate,SUM(studyMinute) as total
