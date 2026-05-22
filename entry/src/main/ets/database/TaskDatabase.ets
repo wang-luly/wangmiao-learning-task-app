@@ -161,6 +161,7 @@ export class TaskDatabase{
     start.setMilliseconds(0)
     let end=new Date(start)
     end.setDate(end.getDate()+1)
+    //将今天所有任务的studyMinute相加，只有一行
     let result=await this.store.querySql(
       `SELECT SUM(studyMinute) AS total FROM study_record WHERE studyDate>=? AND studyDate<=?`,
       [start.getTime(),end.getTime()]
@@ -175,6 +176,31 @@ export class TaskDatabase{
     )
     result.close()//别忘记关result
     return total
+  }
+  //查询最近七天学习时长,返回仅七天学习时长数组
+  async queryLast7Days():Promise<number[]>{
+    if(!this.store) return[]
+    let startTime=new Date()
+    startTime.setDate(startTime.getDate()-6)
+    startTime.setHours(0,0,0,0)
+    //todo:这里为什么要用const
+    const result=await this.store.querySql(
+      `
+        SELECT studyDate,SUM(studyMinute) as total
+        FROM study_record
+        WHERE studyDate>=?
+        GROUP BY studyDate
+        ORDER BY studyDate ASC
+      `,[startTime.getTime()]
+    )
+    let sevenDays:number[]=[]
+    while(result.goToNextRow()){
+      sevenDays.push(result.getLong(
+        result.getColumnIndex('total')
+      ))
+    }
+    result.close()
+    return sevenDays
   }
 
 }
