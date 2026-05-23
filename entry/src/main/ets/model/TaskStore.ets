@@ -12,6 +12,7 @@ export class TaskStore {
   async addTask(task: TaskItem) {
     await taskDB.insertTask(task)
     this.tasks.push(task)
+    this.loadTasks()
   }
   //更新任务
   async updateTask(task: TaskItem) {

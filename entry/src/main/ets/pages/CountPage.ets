@@ -7,20 +7,20 @@ export struct CountPage {
   @State todayMinute:number=0
   //目标学习时长
   @State targetMinute:number=240
-  //近七天学习时长
+  //近七天学习时长todo:假数据
   @State weekData:number[]=[30,50,60,40,20,10,90]
   //Canvas画布
   private settings:RenderingContextSettings=new RenderingContextSettings(true)
   private ctx:CanvasRenderingContext2D=
     new CanvasRenderingContext2D(this.settings)
   //===============================函数======================================
-  // async aboutToAppear(){//每次到这个页面会执行一次
-  //   //从数据库中获取今日学习总时长
-  //   this.todayMinute=await taskDB.queryTodayStudyMinute()
-  //   //从数据库中获取近七天学习时长
-  //   this.weekData=await taskDB.queryLast7Days()
-  //
-  // }
+  async aboutToAppear(){//每次到这个页面会执行一次
+    //从数据库中获取今日学习总时长
+    this.todayMinute=await taskDB.queryTodayStudyMinute()
+    //从数据库中获取近七天学习时长
+    this.weekData=await taskDB.queryLast7Days()
+
+  }
 
   //=============================UI=============================================
   build() {

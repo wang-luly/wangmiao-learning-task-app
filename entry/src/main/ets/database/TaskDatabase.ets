@@ -138,7 +138,7 @@ export class TaskDatabase{
     )
     return task
   }
-  //插入学习记录
+  //插入学习记录进学习记录表
   async insertRecord(record:StudyRecord){
     if(!this.store) return
     await this.store.insert(
@@ -152,7 +152,7 @@ export class TaskDatabase{
     )
   }
 
-  //查询今日学习总分钟
+  //在学习记录表中查询今日学习总分钟
   async queryTodayStudyMinute():Promise<number>{
     if(!this.store) return 0
     let start=new Date()
@@ -207,17 +207,21 @@ export class TaskDatabase{
 
   //根据截止日期查询任务
   async queryTaskByDate(date:number):Promise<TaskItem[]>{
+    const start=new Date(date)
+    start.setHours(0,0,0,0)//date参数的00：00为开始区间
+    const end=new Date(start)
+    end.setDate(end.getDate()+1)//date参数的明日00：00为结束
     if(!this.store) return[]
-    let today=new Date()
     const result=await this.store.querySql(
       `
-        SELECT * FROM task WHRER dueTime=?
-      `,[today.getTime()]
+        SELECT * FROM task WHERE dueTime >= ? AND dueTime < ?
+      `,[start.getTime(),end.getTime()]
     )
     let res:TaskItem[]=[]
     if(result.rowCount==0) return[]
     while (result.goToNextRow()) {
       let task=await this.resultToTask(result)
+      res.push(task)
     }
     return res
   }

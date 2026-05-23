@@ -1,7 +1,8 @@
 import { notificationManager } from "@kit.NotificationKit";
 import { common } from "@kit.AbilityKit";
 import { taskDB } from "../database/TaskDatabase";
-import { reminderAgentManager } from "@kit.BackgroundTasksKit";
+import { TaskSignal } from "@kit.CoreFileKit";
+import { taskStore, TaskStore } from "../model/TaskStore";
 
 
 //保存app全局上下文，用于后台通知
@@ -33,25 +34,73 @@ export async function sendNotify(title:string,content:string){
 
 //今日时长达标通知
 export async function todayTimeNotify(){
+  //目标时间
+  const triggerTime:number=0
   //测试今日时长已达标
   const testTime=250
   //从数据库查询今日学习时长
-  const  todayTime=await taskDB.queryTodayStudyMinute()
-  if(testTime>=240){
+  let todayTime:number=await taskDB.queryTodayStudyMinute()//这里必须用数据库，因为store没写
+  //真实完成指定今日时长
+  if(todayTime>=triggerTime){
     await sendNotify(
       "今日学习任务已达标",
-      `今日已学习 ${testTime} 分钟，恭喜完成目标`
+      `今日已学习 ${todayTime} 分钟，恭喜完成目标${triggerTime} 分钟`
     )
   }
+  // //测试完成指定今日时长
+  // if(testTime>=triggerTime){
+  //   await sendNotify(
+  //     "今日学习任务已达标",
+  //     `今日已学习 ${testTime} 分钟，恭喜完成目标${triggerTime} 分钟`
+  //   )
+  // }
 }
+
 //检查今日有无要截至的任务,发送通知
-export async function todayDueTime(){
+export async function todayDueTimeNotify(){
+  console.info('[DEBUG] todayDueTimeNotify() 被调用');
+  await taskStore.loadTasks()
   const today=new Date()
-  //从数据库中找到截至日期为今天的任务列表
-  const tasks=await taskDB.queryTaskByDate(today.getTime())
+  console.info('[DEBUG] 今天日期:', today.toLocaleDateString());
+  console.info('[DEBUG] 今天时间戳:', today.getTime());
+
+  // 先查询所有任务
+  const allTasks=await taskDB.queryAllTask();
+  console.info('[DEBUG] 数据库中所有任务数量:', allTasks.length);
+
+  allTasks.forEach((t, index) => {
+    const taskDate = new Date(t.dueTime);
+    console.info(`[DEBUG] 任务${index}:`, {
+      name: t.name,
+      dueDate: taskDate.toLocaleDateString(),
+      dueTimestamp: t.dueTime,
+      isToday: taskDate.toDateString() === today.toDateString()
+    });
+  });
+
+  //再查询今日任务
+  const tasks=await taskStore.getToday()
+  console.info('[DEBUG] 查询到今日任务数量:', tasks.length);
+
   if(tasks.length>0){
     const taskNames=tasks.map(t=>t.name).join('、')
-    //发送今日到期任务提醒
-    await sendNotify("今日有任务到期",`你有任务需要完成${taskNames}`)
+    console.info('[DEBUG] 今日任务名称:', taskNames);
+    await sendNotify("今日有任务到期",`你有 ${tasks.length} 任务需要完成: ${taskNames}`)
+    console.info('[DEBUG] 通知已发送');
+  } else {
+    console.info('[DEBUG] 今日没有到期任务');
   }
 }
+
+//请求通知权限
+export async function requestNotificationPermission(): Promise<void> {
+    try {
+      await notificationManager.requestEnableNotification();
+      console.info('通知权限请求已发送');
+    } catch (err) {
+      let error = err as BusinessError;
+      console.error(`请求通知权限失败: ${error.code}, ${error.message}`);
+    }
+}
+
+

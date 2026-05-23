@@ -3,7 +3,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
 import { notificationManager } from '@kit.NotificationKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { initNotificationContext } from '../utils/NotificationUtils';
+import { initNotificationContext, requestNotificationPermission, todayDueTimeNotify } from '../utils/NotificationUtils';
 
 const DOMAIN = 0x0000;
 
@@ -17,7 +17,7 @@ export default class EntryAbility extends UIAbility {
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onCreate');
   }
 
-  onDestroy(): void {
+  onDestroy(){
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onDestroy');
   }
   //=============================================================================
@@ -31,27 +31,18 @@ export default class EntryAbility extends UIAbility {
       }
       hilog.info(DOMAIN, 'testTag', 'Succeeded in loading the content.');
     });
-
-    await this.requestNotificationPermission();
+    //申请通知权限
+    await requestNotificationPermission();
     initNotificationContext(this.context);
-  }
-
-  async requestNotificationPermission(): Promise<void> {
-    try {
-      await notificationManager.requestEnableNotification();
-      console.info('通知权限请求已发送');
-    } catch (err) {
-      let error = err as BusinessError;
-      console.error(`请求通知权限失败: ${error.code}, ${error.message}`);
-    }
   }
 
   onWindowStageDestroy(): void {
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onWindowStageDestroy');
   }
 
-  onForeground(): void {
+  onForeground(){
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onForeground');
+
   }
 
   onBackground(): void {
