@@ -44,7 +44,6 @@ export async function todayTimeNotify(){
     )
   }
 }
-
 //检查今日有无要截至的任务,发送通知
 export async function todayDueTime(){
   const today=new Date()
@@ -55,9 +54,4 @@ export async function todayDueTime(){
     //发送今日到期任务提醒
     await sendNotify("今日有任务到期",`你有任务需要完成${taskNames}`)
   }
-}
-//todo:通知功能
-//每天8：00自动检查（无需打开app）
-export async function alarm8(){
-
 }

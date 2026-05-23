@@ -171,7 +171,8 @@ export struct TaskListPage {
   filterDueTime():TaskItem[]{
     //显示所有==null
     if(!this.filterDate){
-      return this.store.tasks}
+      return this.store.tasks
+    }
     //显示当前筛选日期任务
     return this.store.tasks.filter((item)=>{
       return this.isSameDay(item.dueTime,this.filterDate!)
@@ -283,7 +284,7 @@ export struct TaskListPage {
 
             //学习任务列表-------------------------------
             if(this.isStudyExpand){
-              ForEach(this.taskNum==0?this.store.tasks:this.filterDueTime(),(item:TaskItem)=>{
+              ForEach(this.taskNum==0?this.store.getToday():this.filterDueTime(),(item:TaskItem)=>{
                 ListItem(){
                   //TaskCard
                   TaskCard({//这是父组件传递给子组件TaskCard,task
