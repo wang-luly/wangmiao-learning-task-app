@@ -1,8 +1,6 @@
 import { AbilityConstant, ConfigurationConstant, UIAbility, Want } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
-import { notificationManager } from '@kit.NotificationKit';
-import { BusinessError } from '@kit.BasicServicesKit';
 import { initNotificationContext, requestNotificationPermission, todayDueTimeNotify } from '../utils/NotificationUtils';
 
 const DOMAIN = 0x0000;
@@ -38,8 +36,8 @@ export default class EntryAbility extends UIAbility {
 
   async onWindowStageDestroy(){
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onWindowStageDestroy');
-    //检查今日到期任务
-    await todayDueTimeNotify()
+    // //检查今日到期任务
+    // await todayDueTimeNotify()
   }
 
   onForeground(){
@@ -47,7 +45,9 @@ export default class EntryAbility extends UIAbility {
 
   }
 
-  onBackground(): void {
+  async onBackground(){
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onBackground');
+    // //检查今日到期任务
+    // await todayDueTimeNotify()
   }
 }

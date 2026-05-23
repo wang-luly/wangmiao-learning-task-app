@@ -7,7 +7,7 @@ import { taskDB } from "../database/TaskDatabase";
 import { SortTask } from "../utils/SortTask";
 import { TaskDetailDialog } from "../components/TaskDetailDialog";
 import { taskStore,TaskStore } from "../model/TaskStore";
-import { todayDueTimeNotify } from "../utils/NotificationUtils";
+import { refreshTomorrowReminder, todayDueTimeNotify } from "../utils/NotificationUtils";
 
 @Component
 export struct TaskListPage {
@@ -156,6 +156,8 @@ export struct TaskListPage {
     this.initTaskDialog()//添加编辑弹窗
     // //检查今日到期任务
     // await todayDueTimeNotify()
+    //刷新明日通知
+    await refreshTomorrowReminder()
   }
   //判断是否是今日的函数
   isToday(time:Date):boolean{

@@ -11,6 +11,10 @@
     {
       "name": "EntryAbility_label",
       "value": "label"
+    },
+    {
+      "name": "reminder_permission_reason",
+      "value": "用于在任务到期前提醒完成未完成任务"
     }
   ]
 }
