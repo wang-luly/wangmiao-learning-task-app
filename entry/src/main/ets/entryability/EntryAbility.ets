@@ -36,8 +36,10 @@ export default class EntryAbility extends UIAbility {
     initNotificationContext(this.context);
   }
 
-  onWindowStageDestroy(): void {
+  async onWindowStageDestroy(){
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onWindowStageDestroy');
+    //检查今日到期任务
+    await todayDueTimeNotify()
   }
 
   onForeground(){

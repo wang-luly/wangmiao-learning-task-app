@@ -154,10 +154,8 @@ export struct TaskListPage {
     this.applyPriority()
     //初始化，使得弹窗控制器不为空
     this.initTaskDialog()//添加编辑弹窗
-    console.info('[DEBUG] TaskListPage: 任务数量', this.store.tasks.length);
-    console.info('[DEBUG] TaskListPage: 任务列表', JSON.stringify(this.store.tasks));
-    //检查今日到期任务
-    await todayDueTimeNotify()
+    // //检查今日到期任务
+    // await todayDueTimeNotify()
   }
   //判断是否是今日的函数
   isToday(time:Date):boolean{

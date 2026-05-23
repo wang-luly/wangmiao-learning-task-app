@@ -64,21 +64,7 @@ export async function todayDueTimeNotify(){
   console.info('[DEBUG] 今天日期:', today.toLocaleDateString());
   console.info('[DEBUG] 今天时间戳:', today.getTime());
 
-  // 先查询所有任务
-  const allTasks=await taskDB.queryAllTask();
-  console.info('[DEBUG] 数据库中所有任务数量:', allTasks.length);
-
-  allTasks.forEach((t, index) => {
-    const taskDate = new Date(t.dueTime);
-    console.info(`[DEBUG] 任务${index}:`, {
-      name: t.name,
-      dueDate: taskDate.toLocaleDateString(),
-      dueTimestamp: t.dueTime,
-      isToday: taskDate.toDateString() === today.toDateString()
-    });
-  });
-
-  //再查询今日任务
+  //查询今日任务
   const tasks=await taskStore.getToday()
   console.info('[DEBUG] 查询到今日任务数量:', tasks.length);
 
