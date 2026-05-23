@@ -151,6 +151,7 @@ export class TaskDatabase{
       }
     )
   }
+
   //查询今日学习总分钟
   async queryTodayStudyMinute():Promise<number>{
     if(!this.store) return 0
@@ -177,6 +178,7 @@ export class TaskDatabase{
     result.close()//别忘记关result
     return total
   }
+
   //查询最近七天学习时长,返回仅七天学习时长数组
   async queryLast7Days():Promise<number[]>{
     if(!this.store) return[]
@@ -201,6 +203,23 @@ export class TaskDatabase{
     }
     result.close()
     return sevenDays
+  }
+
+  //根据截止日期查询任务
+  async queryTaskByDate(date:number):Promise<TaskItem[]>{
+    if(!this.store) return[]
+    let today=new Date()
+    const result=await this.store.querySql(
+      `
+        SELECT * FROM task WHRER dueTime=?
+      `,[today.getTime()]
+    )
+    let res:TaskItem[]=[]
+    if(result.rowCount==0) return[]
+    while (result.goToNextRow()) {
+      let task=await this.resultToTask(result)
+    }
+    return res
   }
 
 }

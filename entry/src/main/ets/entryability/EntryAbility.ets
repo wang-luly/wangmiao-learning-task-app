@@ -1,6 +1,9 @@
 import { AbilityConstant, ConfigurationConstant, UIAbility, Want } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
+import { notificationManager } from '@kit.NotificationKit';
+import { BusinessError } from '@kit.BasicServicesKit';
+import { initNotificationContext } from '../utils/NotificationUtils';
 
 const DOMAIN = 0x0000;
 
@@ -17,32 +20,41 @@ export default class EntryAbility extends UIAbility {
   onDestroy(): void {
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onDestroy');
   }
-
-  onWindowStageCreate(windowStage: window.WindowStage): void {
-    // Main window is created, set main page for this ability
+  //=============================================================================
+  async onWindowStageCreate(windowStage: window.WindowStage): Promise<void> {
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onWindowStageCreate');
 
     windowStage.loadContent('pages/Index', (err) => {
-      if (err.code) {
+      if (err) {
         hilog.error(DOMAIN, 'testTag', 'Failed to load the content. Cause: %{public}s', JSON.stringify(err));
         return;
       }
       hilog.info(DOMAIN, 'testTag', 'Succeeded in loading the content.');
     });
+
+    await this.requestNotificationPermission();
+    initNotificationContext(this.context);
+  }
+
+  async requestNotificationPermission(): Promise<void> {
+    try {
+      await notificationManager.requestEnableNotification();
+      console.info('通知权限请求已发送');
+    } catch (err) {
+      let error = err as BusinessError;
+      console.error(`请求通知权限失败: ${error.code}, ${error.message}`);
+    }
   }
 
   onWindowStageDestroy(): void {
-    // Main window is destroyed, release UI related resources
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onWindowStageDestroy');
   }
 
   onForeground(): void {
-    // Ability has brought to foreground
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onForeground');
   }
 
   onBackground(): void {
-    // Ability has back to background
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onBackground');
   }
 }

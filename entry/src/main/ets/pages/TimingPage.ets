@@ -4,6 +4,7 @@ import { TaskStore,taskStore } from "../model/TaskStore";
 import { data } from "@kit.TelephonyKit";
 import { StudyRecord } from "../model/StudyRecord";
 import { util } from "@kit.ArkTS";
+import { todayTimeNotify } from "../utils/NotificationUtils";
 
 @Entry
 @Component
@@ -82,7 +83,8 @@ export struct TimingPage {
       )
       //写进数据库里
       await taskDB.insertRecord(record)
-
+      //点击结束后检查今日学习时长是否达标
+      await todayTimeNotify()
     }
     //最后将second重置为0
     this.second=0
