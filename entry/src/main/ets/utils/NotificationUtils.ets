@@ -35,7 +35,7 @@ export async function sendNotify(title:string,content:string){
 //今日时长达标通知
 export async function todayTimeNotify(){
   //目标时间
-  const triggerTime:number=0
+  const triggerTime:number=240
   //测试今日时长已达标
   const testTime=250
   //从数据库查询今日学习时长
