@@ -1,7 +1,9 @@
 import { AbilityConstant, ConfigurationConstant, UIAbility, Want } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
-import { initNotificationContext, requestNotificationPermission, todayDueTimeNotify } from '../utils/NotificationUtils';
+import { initNotificationContext,
+  requestCalendarPermission,
+  requestNotificationPermission, todayDueTimeNotify } from '../utils/NotificationUtils';
 
 const DOMAIN = 0x0000;
 
@@ -29,9 +31,12 @@ export default class EntryAbility extends UIAbility {
       }
       hilog.info(DOMAIN, 'testTag', 'Succeeded in loading the content.');
     });
-    //申请通知权限
-    await requestNotificationPermission();
+    //初始化上下文
     initNotificationContext(this.context);
+    //申请普通通知权限
+    await requestNotificationPermission();
+    //申请日历权限
+    await requestCalendarPermission()
   }
 
   async onWindowStageDestroy(){

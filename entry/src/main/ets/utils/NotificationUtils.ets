@@ -1,12 +1,31 @@
 import { notificationManager } from "@kit.NotificationKit";
-import { common } from "@kit.AbilityKit";
+import { abilityAccessCtrl, common, Permissions } from "@kit.AbilityKit";
 import { taskDB } from "../database/TaskDatabase";
 import { TaskSignal } from "@kit.CoreFileKit";
 import { taskStore, TaskStore } from "../model/TaskStore";
 import { reminderAgentManager } from "@kit.BackgroundTasksKit";
+import { TaskItem } from "../model/TaskItem";
+import { preferences } from "@kit.ArkData";
+import { calendarManager } from "@kit.CalendarKit";
+import { isSimulationMode } from "../config/AppConfig";
 
 //提醒ID
 let tomorrowReminderId:number|null=null
+
+//Preference用来持久化日程id
+const CALENDAR_PREF_NAME='calendar_reminder_store'
+const CALENDAR_EVENT_ID_KEY='morningEventId'
+//写入系统日历的日程标题
+const MORNING_EVENT_TITLE='待办任务提醒'
+//提醒时间
+const REMINDER_HOUR=8
+const REMINDER_MINUTE=0
+//为了方便调试
+const USE_TEST_REMINDER_TIME=true
+//内存中的日程id
+let morningEventid:number|null=null
+//避免并发
+let isRefreshingReminder=false
 
 //保存app全局上下文，用于后台通知
 let appContext:common.UIAbilityContext|null=null
@@ -84,79 +103,203 @@ export async function todayDueTimeNotify(){
   }
 }
 
-//请求通知权限
+//申请普通通知权限
 export async function requestNotificationPermission(): Promise<void> {
     try {
+      //
       await notificationManager.requestEnableNotification();
-      console.info('通知权限请求已发送');
+      console.info('[notification] 通知权限请求已发送');
     } catch (err) {
       let error = err as BusinessError;
-      console.error(`请求通知权限失败: ${error.code}, ${error.message}`);
+      console.error(`[notification] 请求通知权限失败: ${error.code}, ${error.message}`);
     }
 }
 
-//刷新明天提醒通知
-export async function refreshTomorrowReminder() {
-  console.log('[debug] 1. 开始')
-
+//申请日历权限
+export  async function requestCalendarPermission():Promise<boolean>{
+  if(!appContext){
+    console.log('[calendar] appContext未初始化无法申请权限')
+    return false
+  }
+  const permissions:Permissions[]=['ohos.permission.READ_CALENDAR','ohos.permission.WRITE_CALENDAR']
   try {
-    const before = await reminderAgentManager.getValidReminders()
-    console.log('[debug] 取消前数量 =', before.length)
+    const atManager = abilityAccessCtrl.createAtManager()
+    //弹出系统权限对话框
+    const result = await atManager.requestPermissionsFromUser(appContext,permissions)
+    //检查每一项是否都是PERMISSION_GRANTED
+    const granted=result.authResults.every((status)=> status===abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED)
+    if(!granted){
+      console.log('[calendar] 日历权限未全部授予，请到系统设置手动打开')
+    }
+    return granted
+  }catch (err) {
+    //类型断言
+    const error=err as BusinessError
+    console.error(`[calendar] 申请权限异常： ${error.code},${error.message}`)
+    return false
+  }
+}
 
-    await reminderAgentManager.cancelAllReminders()
-    tomorrowReminderId=null
-    console.log('[debug] 删除所有id')
+//刷新明天提醒通知 Calendar Kit
+export async function refreshTomorrowReminder() {
+  //防止重复进入
+  if(isRefreshingReminder){
+    console.info('[calendar] 正在刷新，跳过重复调用')
+    return
+  }
+  if(!appContext){
+    console.error('[calendar] appContext未初始化')
+    return
+  }
+  isRefreshingReminder=true
 
-    // 等 2 秒让系统释放配额
-    await new Promise<void>((resolve) => {
-      setTimeout(() => resolve(), 2000)
-    })
-
-    const after = await reminderAgentManager.getValidReminders()
-    console.log('[debug] 取消后数量 =', after.length)  // 应该是 0
-    // if (tomorrowReminderId) {
-    //   console.log('[debug] 2. 取消旧提醒', tomorrowReminderId)
-    //   await reminderAgentManager.cancelReminder(tomorrowReminderId)
-    //   tomorrowReminderId = null
-    // }
-
-    console.log('[debug] 3. 开始 loadTasks')
+  try{
+    //确认日程权限
+    const hasPermission = await requestCalendarPermission()
+    if(!hasPermission){
+      return
+    }
+    //获取系统日历对象
+    const calendarMgr=calendarManager.getCalendarManager(appContext)
+    const calendar=await calendarMgr.getCalendar()
+    //删除旧日程
+    await deleteMorningCalendarEvent(calendar)
+    //从数据库加载最新任务
     await taskStore.loadTasks()
-
-    const tasks = taskStore.getTomorrow()
-    console.log('[debug] 4. 明天任务数 =', tasks.length)
-
-    if (tasks.length === 0) {
-      console.log('[debug] 5. 明天没有任务，结束')
+    //计算提醒时间
+    const remindTime=getNextReminderTime()
+    //计算提醒日当天的任务
+    const tasks=getTaskNotFinished(remindTime)
+    const dbTasks=await taskDB.queryAllTask()
+    console.info(`[calendar] 直接查数据库任务数为${dbTasks.length}`)
+    console.info(`[calendar] 提醒时间=${remindTime.toLocaleString()},任务数=${tasks.length}`)
+    //没有任务就只删除旧日程，不创建新的
+    if(tasks.length===0){
+      console.info('[calendar] 无待提醒任务，结束')
       return
     }
 
-    const trigger = new Date()
-    trigger.setMinutes(trigger.getMinutes() + 2)
+    //拼接通知内容
+    const taskNames=tasks.map(t=>t.name).join('、')
+    const startTime=remindTime.getTime()
 
-    const reminderReq: reminderAgentManager.ReminderRequestCalendar = {
-      reminderType: reminderAgentManager.ReminderType.REMINDER_TYPE_CALENDAR,
-      dateTime: {
-        year: trigger.getFullYear(),
-        month: trigger.getMonth() + 1,
-        day: trigger.getDate(),
-        hour: trigger.getHours(),
-        minute: trigger.getMinutes(),
-        second: 0
-      },
-      title: '待办任务提醒',
-      content: `你还有${tasks.length}个任务未完成`,
-      notificationId: 200495,
-      slotType: notificationManager.SlotType.SOCIAL_COMMUNICATION,
-      ringDuration: 0
+    //构造日历事件
+    const event:calendarManager.Event={
+      type:calendarManager.EventType.NORMAL,  //普通日程
+      title:MORNING_EVENT_TITLE,              //日历里显示的标题
+      description:`你有${tasks.length}个任务需要完成：${taskNames}`,//通知正文
+      startTime:startTime,
+      endTime:startTime+30*60*1000,
+      isAllDay:false,                          //非全天事件
+      reminderTime:[0]                        //提前0分钟开始提醒
     }
 
-    console.log('[debug] 6. 准备注册提醒', JSON.stringify(reminderReq.dateTime))
-    tomorrowReminderId = await reminderAgentManager.publishReminder(reminderReq)
-    console.log('[debug] 7. 注册成功 id =', tomorrowReminderId)
+    //写入系统日历
+    const eventId = await calendar.addEvent(event)
+    await saveStoredEventId(eventId)
+    console.info(`[calendar] 日程创建成功 id=${eventId}`)
 
-  } catch (err) {
-    const error = err as BusinessError
-    console.error(`[debug] 出错: code=${error.code}, msg=${error.message}`)
+  }catch (err) {
+    const error =err as BusinessError
+    console.error(`[calendar] 刷新失败 ${error.code},${error.message}`)
+  } finally {
+    isRefreshingReminder=false
   }
 }
+
+/**
+ * 计算下一次提醒的时间，测试模式：当前时间加2min，正式模式每天8：00
+ */
+function getNextReminderTime():Date {
+  //测试模式:将下次提醒时间定到创建app的后两分钟
+  if(isSimulationMode()){
+    const testTime=new Date()
+    testTime.setMinutes(testTime.getMinutes()+2)
+    testTime.setSeconds(0,0)
+    return testTime
+  }
+  //正式模式
+  const now=new Date()
+  const target=new Date()
+  target.setHours(REMINDER_HOUR,REMINDER_MINUTE,0,0)
+  //如果今日定时已过，则提醒时间订到明天
+  if(now.getTime()>=target.getTime()){
+    target.setDate(target.getDate()+1)
+  }
+  return target
+}
+
+/**
+ * 获取某一天到期且未完成的任务
+ */
+function getTaskNotFinished(date: Date) :TaskItem[]{
+  return taskStore.tasks.filter((item)=>
+    item.isFinished===false &&
+    item.dueTime.getFullYear()===date.getFullYear()&&
+    item.dueTime.getMonth()===date.getMonth()&&
+    item.dueTime.getDate()===date.getDate()
+  )
+}
+
+/**
+ * 从Preference读取上次创建的日程id
+ */
+async function loadStoredEventId():Promise<number|null> {
+  if(morningEventid!==null)
+    return morningEventid
+  if(!appContext)
+    return null
+  const pref=await preferences.getPreferences(appContext,CALENDAR_PREF_NAME)
+  const storedId=await pref.get(CALENDAR_EVENT_ID_KEY,-1) as number
+  //-1代表从未创建过
+  if(storedId>=0){
+    morningEventid=storedId
+  }
+  return morningEventid
+}
+
+/**
+ * 把日程id保存到内存+Preferences
+ * @param id:number|null
+ */
+async function saveStoredEventId(id:number|null ) {
+  morningEventid=id
+  if(!appContext){
+    return
+  }
+  const pref =await preferences.getPreferences(appContext,CALENDAR_PREF_NAME)
+  await pref.put(CALENDAR_EVENT_ID_KEY,id??-1)
+  await pref.flush()
+}
+
+/**
+ * 删除旧的日历日程
+ */
+async function deleteMorningCalendarEvent(calendar:calendarManager.Calendar) {
+  //从Pre读id
+  const storedId = await loadStoredEventId()
+  if(storedId===null){
+    return
+  }
+
+  try{
+    await calendar.deleteEvent(storedId)
+    console.info(`[calendar] 已经删除旧日程id ${storedId}`)
+  }catch (err) {
+    const error=err as BusinessError
+    console.warn(`[calendar] 删除旧日程失败： ${error.code},${error.message}`)
+  }
+  await saveStoredEventId(null)
+}
+
+
+
+
+
+
+
+
+
+
+
+

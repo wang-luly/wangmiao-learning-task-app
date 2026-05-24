@@ -11,12 +11,21 @@
     "installationFree": false,
     "pages": "$profile:main_pages",
     "requestPermissions": [
+      //日历读取权限
       {
-        "name": "ohos.permission.PUBLISH_AGENT_REMINDER",
-        "reason": "$string:reminder_permission_reason",
+        "name": "ohos.permission.READ_CALENDAR",
+        "reason": "$string:calendar_read_reason",
         "usedScene": {
           "abilities": ["EntryAbility"],
-          "when": "always"
+          "when": "inuse"
+        }
+      },
+      {
+        "name": "ohos.permission.WRITE_CALENDAR",
+        "reason": "$string:calendar_write_reason",
+        "usedScene": {
+          "abilities": ["EntryAbility"],
+          "when": "inuse"
         }
       }
     ],
