@@ -1,15 +1,19 @@
+import { common } from '@kit.AbilityKit'
 import { isSimulationMode } from "../config/AppConfig"
 import { taskDB } from "../database/TaskDatabase"
 import { GoldenOutlineButtonModifier, TitleTextModifier } from "../theme/AppStyles"
 import { sendNotify } from "../utils/NotificationUtils"
+import { getPageSafeInsets } from "../utils/SafeAreaUtil"
 
 @Component
 export struct CountPage {
+  @State topInset: number = 0
+  @State bottomInset: number = 0
   //今日学习总时长
   @State todayMinute:number=0
   //目标学习时长
   @State targetMinute:number=240
-  //近七天学习时长todo:假数据
+  //近七天学习时长
   @State weekData:number[]=[]
   @State weekLabels: string[] = []
   //Canvas画布
@@ -18,12 +22,16 @@ export struct CountPage {
     new CanvasRenderingContext2D(this.settings)
   //===============================函数======================================
   async aboutToAppear(){//这个页面会执行一次
-    //从数据库中获取今日学习总时长
-    this.todayMinute=await taskDB.queryTodayStudyMinute()
+    const insets = await getPageSafeInsets(this.getUIContext().getHostContext() as common.UIAbilityContext)
+    this.topInset = insets.top
+    this.bottomInset = insets.bottom
     if(isSimulationMode()){
       this.weekData=[30,50,60,40,20,10,90]
+      this.todayMinute=100
     }
     else{
+      //从数据库中获取今日学习总时长
+      this.todayMinute=await taskDB.queryTodayStudyMinute()
       //从数据库中获取近七天学习时长
       this.weekData=await taskDB.queryLast7Days()
     }
@@ -87,14 +95,14 @@ export struct CountPage {
 
       // 柱顶数值
       this.ctx.fillStyle = '#E8D5A3'
-      this.ctx.font = '12px sans-serif'
+      this.ctx.font = '25px sans-serif'
       this.ctx.textAlign = 'center'
       this.ctx.textBaseline = 'bottom'
       this.ctx.fillText(value.toString(), x + barW / 2, y - 4)
 
       // 底部日期
       this.ctx.fillStyle = '#9A9A9A'
-      this.ctx.font = '11px sans-serif'
+      this.ctx.font = '25px sans-serif'
       this.ctx.textBaseline = 'top'
       this.ctx.fillText(this.weekLabels[index] ?? '', x + barW / 2, baseY + 8)
     })
@@ -136,7 +144,7 @@ export struct CountPage {
 
       // 近七日柱状图卡片
       Column({ space: 12 }) {
-        Text('近七日学习情况')
+        Text('近七日学习情况(min)')
           .attributeModifier(new TitleTextModifier())
 
         Canvas(this.ctx)
@@ -160,11 +168,14 @@ export struct CountPage {
           sendNotify('通知', '证明通知功能可以正确进行')
         })
     }
-    .expandSafeArea([SafeAreaType.SYSTEM, SafeAreaType.CUTOUT],
-      [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM, SafeAreaEdge.START, SafeAreaEdge.END])
     .width('100%')
     .height('100%')
     .backgroundColor($r('app.color.bg_primary'))
-    .padding(16)
+    .padding({
+      left: 16,
+      right: 16,
+      top: 16 + this.topInset,
+      bottom: 16 + this.bottomInset
+    })
   }
 }

@@ -1,4 +1,5 @@
 //任务页
+import { common } from '@kit.AbilityKit';
 import { TaskItem } from "../model/TaskItem";
 import { util } from "@kit.ArkTS";
 import {AddTaskDialog} from "../components/AddTaskDialog"
@@ -9,9 +10,12 @@ import { TaskDetailDialog } from "../components/TaskDetailDialog";
 import { taskStore,TaskStore } from "../model/TaskStore";
 import { refreshTomorrowReminder, todayDueTimeNotify } from "../utils/NotificationUtils";
 import { HeaderRowModifier, TitleTextModifier } from "../theme/AppStyles";
+import { getPageSafeInsets } from "../utils/SafeAreaUtil";
 
 @Component
 export struct TaskListPage {
+  @State topInset: number = 0
+  @State bottomInset: number = 0
   //控制是今日还是所有任务
   @State taskNum:number=0
   //控制学习任务是否展示,实现下拉框
@@ -50,7 +54,15 @@ export struct TaskListPage {
           this.currentTask=null
           this.detailDialogController?.close()
         }
-      })
+      }),
+      autoCancel: true,
+      alignment: DialogAlignment.Center,
+      customStyle: true,
+      backgroundColor: $r('app.color.bg_secondary'),
+      cornerRadius: 12,
+      borderWidth: 0,
+      width: '85%',
+      maskColor: '#99000000'
     })
   }
   //学习任务弹窗控制器
@@ -97,8 +109,14 @@ export struct TaskListPage {
           this.editingTask=null
         }
       }),
-      autoCancel:true,
-      alignment:DialogAlignment.Center
+      autoCancel: true,
+      alignment: DialogAlignment.Center,
+      customStyle: true,
+      backgroundColor: $r('app.color.bg_secondary'),
+      cornerRadius: 12,
+      borderWidth: 0,
+      width: 300,
+      maskColor: '#99000000'
     })
   }
   //打开新增弹窗
@@ -136,6 +154,9 @@ export struct TaskListPage {
 //-------------------------------------------------------函数-----------------------------------------------
   //TaskListPage生命周期函数（只执行一次）
   async aboutToAppear() {
+    const insets = await getPageSafeInsets(this.getUIContext().getHostContext() as common.UIAbilityContext)
+    this.topInset = insets.top
+    this.bottomInset = insets.bottom
     //初始化数据库
     await taskDB.init(this.getUIContext().getHostContext() as Context)
     //利用store单例从数据库加载任务
@@ -264,6 +285,11 @@ export struct TaskListPage {
     .width('100%')
     .height('100%')
     .backgroundColor($r('app.color.bg_primary'))
-    .padding({ left: 16, right: 16, top: 12 })
+    .padding({
+      left: 16,
+      right: 16,
+      top: 12 + this.topInset,
+      bottom: this.bottomInset
+    })
     }
 }

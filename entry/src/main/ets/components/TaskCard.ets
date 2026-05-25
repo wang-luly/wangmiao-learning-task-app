@@ -34,7 +34,8 @@ export struct TaskCard {//TaskListPage的子组件
           .fontWeight(FontWeight.Medium)
           .fontColor(this.task.isFinished ? $r('app.color.text_muted') : $r('app.color.text_primary'))
           .decoration({
-            type:this.task.isFinished?TextDecorationType.LineThrough:TextDecorationType.None
+            type:this.task.isFinished?TextDecorationType.LineThrough:TextDecorationType.None,
+            color:Color.White
           })
           .maxLines(1)//最大一行
           .textOverflow({ overflow: TextOverflow.Ellipsis })//超出以省略号显示

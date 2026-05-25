@@ -1,4 +1,5 @@
 import {Priority, TaskItem} from "../model/TaskItem";
+import { AuxiliaryModifier, GHostButtonModifier, GoldenFillButtonModifier, TitleTextModifier } from "../theme/AppStyles";
 
 
 @CustomDialog
@@ -33,15 +34,22 @@ export struct AddTaskDialog{
   build() {
     Column({space:20}){
       //标题
-      Text(this.editingTask?"编辑任务":"创建任务")
-        .fontSize(22)
-        .fontWeight(FontWeight.Bold)
+      Text(this.editingTask ? "编辑任务" : "创建任务")
+        .attributeModifier(new TitleTextModifier())
+        .fontSize(20)
       //输入框
       TextInput({
         placeholder:"请输入任务名称",
         text:this.taskName
       })
         .width('100%')
+        .height(44)
+        .fontSize(15)
+        .fontColor($r('app.color.text_primary'))
+        .placeholderColor($r('app.color.text_muted'))
+        .backgroundColor($r('app.color.bg_elevated'))
+        .borderRadius(8)
+        .border({ width: 1, color: $r('app.color.border_subtle') })
         .onChange((value)=>{
           this.taskName=value
         })
@@ -49,39 +57,66 @@ export struct AddTaskDialog{
       Column({ space: 6 }) {
 
         Text("截止时间")
+          .attributeModifier(new AuxiliaryModifier())
         Column() {
           DatePicker({
             start: this.startTime,
             end: this.endTime,
             selected: this.dueTime
           })
+            .selectedTextStyle({
+              color: '#C9A962',
+              font: { size: 18, weight: FontWeight.Medium }
+            })
+            .disappearTextStyle({
+              color: '#9A9A9A',
+              font: { size: 14, weight: FontWeight.Regular }
+            })
+            .textStyle({
+              color: '#5C5C5C',
+              font: { size: 15, weight: FontWeight.Regular }
+            })
             .onDateChange((value: Date) => {
               this.dueTime = value
             })
         }
         .padding(10)
         .height(70)
-        .backgroundColor("#F5F6F7")
-        .borderRadius(12)
+        .backgroundColor($r('app.color.bg_elevated'))
+        .borderRadius(8)
+        .border({ width: 1, color: $r('app.color.border_subtle') })
       }
       //优先级选择
       Row(){
         Text("优先级")
           .width("30%")
+          .attributeModifier(new AuxiliaryModifier())
         Select(this.priorityList)
           .selected(this.priority)
           .value(this.priorityList[this.priority].value)
+          .font({ size: 15 })
+          .fontColor($r('app.color.text_primary'))
+          .selectedOptionFont({ size: 15 })
+          .optionFont({ size: 15 })
+          .backgroundColor($r('app.color.bg_elevated'))
           .onSelect((index:number)=>{
             this.priority=index
           })
       }
+      .width('100%')
 
       //按钮区域
       Row({space:20}){
-        Button("取消").onClick((event: ClickEvent) => {
+        Button("取消")
+          .attributeModifier(new GHostButtonModifier())
+          .layoutWeight(1)
+          .onClick((event: ClickEvent) => {
           this.controller.close()
         })
-        Button("确定").onClick((event: ClickEvent) => {
+        Button("确定")
+          .attributeModifier(new GoldenFillButtonModifier())
+          .layoutWeight(1)
+          .onClick((event: ClickEvent) => {
           if(!this.taskName||this.taskName.trim().length==0){
             this.getUIContext().getPromptAction().showToast({
               message:'无法创建，你还没有输入任务名哦'
@@ -97,7 +132,8 @@ export struct AddTaskDialog{
     }
     .width(300)
     .padding(20)
-    .backgroundColor(Color.White)
-    .borderRadius(20)
+    .backgroundColor($r('app.color.bg_secondary'))
+    .borderRadius(12)
+    .border({ width: 1, color: $r('app.color.border_subtle') })
   }
 }
