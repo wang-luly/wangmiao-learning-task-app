@@ -18,6 +18,14 @@ export struct TaskCard {//TaskListPage的子组件
   //-------------------------------------------函数--------------------------------------------
   //回调详情
   detailClick:()=>void=()=>{}
+  @Styles
+  taskCardContainerStyle() {
+  .width('100%')
+  .padding({ left: 12, right: 12, top: 14, bottom: 14 })
+  .backgroundColor($r('app.color.bg_secondary'))
+  .borderRadius(12)
+  .border({ width: 1, color: $r('app.color.border_subtle') })
+}
 
   build() {
     Row(){
@@ -67,7 +75,7 @@ export struct TaskCard {//TaskListPage的子组件
           }
         })
     }
-    .attributeModifier(new TaskCardMarginModifier())
+    .taskCardContainerStyle()
     .transition(listItemTransition())
     .onClick(() => {
       this.detailClick()
