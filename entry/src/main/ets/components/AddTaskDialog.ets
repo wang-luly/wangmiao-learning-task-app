@@ -1,46 +1,73 @@
-import {Priority, TaskItem} from "../model/TaskItem";
-import { AuxiliaryModifier, GHostButtonModifier, GoldenFillButtonModifier, TitleTextModifier } from "../theme/AppStyles";
+import { Priority, TaskItem } from "../model/TaskItem"
+import {
+  AuxiliaryModifier,
+  GHostButtonModifier,
+  GoldenFillButtonModifier,
+  TitleTextModifier
+} from "../theme/AppStyles"
 
+/** 添加/编辑弹窗水平翻转入场时长（毫秒） */
+const FLIP_IN_DURATION: number = 620
 
 @CustomDialog
-export struct AddTaskDialog{
-  //弹窗控制器用来控制弹窗是否关闭
-  controller:CustomDialogController
-  @State taskName:string=''//任务名
-  @State dueTime:Date=new Date()//选择的时间
-  @State startTime:Date=new Date()//可供选择的起始时间
-  @State endTime:Date=new Date()//可供选择的结束时间
-  @State priority:number=Priority.LOW//默认低优先级
-  editingTask:TaskItem|null=null
-  priorityList:SelectOption[]=[{value:"低"},{value:"中"},{value:"高"}]//优先级选择列表
+export struct AddTaskDialog {
+  controller: CustomDialogController
+  @State taskName: string = ''
+  @State dueTime: Date = new Date()
+  @State startTime: Date = new Date()
+  @State endTime: Date = new Date()
+  @State priority: number = Priority.LOW
+  editingTask: TaskItem | null = null
+  priorityList: SelectOption[] = [{ value: "低" }, { value: "中" }, { value: "高" }]
 
-  //生命周期(钩子)函数---------------------------
+  @State animScale: number = 0.12
+  @State flipScaleX: number = 0.02
+  /** 绕 Y 轴水平翻转：180° → 0° */
+  @State flipAngleY: number = 180
+  @State animOpacity: number = 0
+
+  confirm: (taskName: string, dueTime: Date, priority: number) => void = () => {}
+
   aboutToAppear(): void {
-    let now=new Date()
-    this.startTime=new Date(now)
-    this.endTime=new Date(now)
-    this.endTime.setFullYear(this.endTime.getFullYear()+1)
-    //如果是编辑模式，则显示原任务参数
-    if(this.editingTask){
-      this.taskName=this.editingTask.name
-      this.dueTime=this.editingTask.dueTime
-      this.priority=this.editingTask.priority
+    let now = new Date()
+    this.startTime = new Date(now)
+    this.endTime = new Date(now)
+    this.endTime.setFullYear(this.endTime.getFullYear() + 1)
+    if (this.editingTask) {
+      this.taskName = this.editingTask.name
+      this.dueTime = this.editingTask.dueTime
+      this.priority = this.editingTask.priority
     }
+    setTimeout(() => {
+      this.playHorizontalFlipIn()
+    }, 50)
   }
-  //点击确定后的回调函数，不能加prop
-  confirm:(taskName:string,dueTime:Date,priority:number)=>void = ()=>{}
-  //--------------------------------build---------------------------------------
+
+  /** 水平绕 Y 轴 180°→0°，由小变大淡入 */
+  playHorizontalFlipIn(): void {
+    this.animScale = 0.12
+    this.flipScaleX = 0.02
+    this.flipAngleY = 180
+    this.animOpacity = 0
+    this.getUIContext().animateTo({
+      duration: FLIP_IN_DURATION,
+      curve: Curve.EaseInOut
+    }, () => {
+      this.animScale = 1
+      this.flipScaleX = 1
+      this.flipAngleY = 0
+      this.animOpacity = 1
+    })
+  }
 
   build() {
-    Column({space:20}){
-      //标题
+    Column({ space: 20 }) {
       Text(this.editingTask ? "编辑任务" : "创建任务")
         .attributeModifier(new TitleTextModifier())
         .fontSize(20)
-      //输入框
       TextInput({
-        placeholder:"请输入任务名称",
-        text:this.taskName
+        placeholder: "请输入任务名称",
+        text: this.taskName
       })
         .width('100%')
         .height(44)
@@ -50,12 +77,10 @@ export struct AddTaskDialog{
         .backgroundColor($r('app.color.bg_elevated'))
         .borderRadius(8)
         .border({ width: 1, color: $r('app.color.border_subtle') })
-        .onChange((value)=>{
-          this.taskName=value
+        .onChange((value) => {
+          this.taskName = value
         })
-      //日期选择器
       Column({ space: 6 }) {
-
         Text("截止时间")
           .attributeModifier(new AuxiliaryModifier())
         Column() {
@@ -86,8 +111,7 @@ export struct AddTaskDialog{
         .borderRadius(8)
         .border({ width: 1, color: $r('app.color.border_subtle') })
       }
-      //优先级选择
-      Row(){
+      Row() {
         Text("优先级")
           .width("30%")
           .attributeModifier(new AuxiliaryModifier())
@@ -99,35 +123,32 @@ export struct AddTaskDialog{
           .selectedOptionFont({ size: 15 })
           .optionFont({ size: 15 })
           .backgroundColor($r('app.color.bg_elevated'))
-          .onSelect((index:number)=>{
-            this.priority=index
+          .onSelect((index: number) => {
+            this.priority = index
           })
       }
       .width('100%')
 
-      //按钮区域
-      Row({space:20}){
+      Row({ space: 20 }) {
         Button("取消")
           .attributeModifier(new GHostButtonModifier())
           .layoutWeight(1)
-          .onClick((event: ClickEvent) => {
-          this.controller.close()
-        })
+          .onClick(() => {
+            this.controller.close()
+          })
         Button("确定")
           .attributeModifier(new GoldenFillButtonModifier())
           .layoutWeight(1)
-          .onClick((event: ClickEvent) => {
-          if(!this.taskName||this.taskName.trim().length==0){
-            this.getUIContext().getPromptAction().showToast({
-              message:'无法创建，你还没有输入任务名哦'
-            })
-            return
-          }
-          //调用外部函数,因为避免让dialog需要依赖taskList
-          this.confirm(this.taskName,this.dueTime,this.priority)
-          //关闭弹窗
-          this.controller.close()
-        })
+          .onClick(() => {
+            if (!this.taskName || this.taskName.trim().length == 0) {
+              this.getUIContext().getPromptAction().showToast({
+                message: '无法创建，你还没有输入任务名哦'
+              })
+              return
+            }
+            this.confirm(this.taskName, this.dueTime, this.priority)
+            this.controller.close()
+          })
       }
     }
     .width(300)
@@ -135,5 +156,15 @@ export struct AddTaskDialog{
     .backgroundColor($r('app.color.bg_secondary'))
     .borderRadius(12)
     .border({ width: 1, color: $r('app.color.border_subtle') })
+    .rotate({
+      x: 0,
+      y: 1,
+      z: 0,
+      angle: this.flipAngleY,
+      centerX: '50%',
+      centerY: '50%'
+    })
+    .scale({ x: this.animScale * this.flipScaleX, y: this.animScale })
+    .opacity(this.animOpacity)
   }
 }

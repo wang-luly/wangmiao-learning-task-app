@@ -21,9 +21,10 @@ export struct TaskListPage {
   //控制是今日还是所有任务
   @State taskNum:number=0
   //控制学习任务是否展示,实现下拉框
-  @State isStudyExpand:boolean=false
+  @State isStudyExpand:boolean=true
+
   //控制升序排序还是降序排序
-  @State isDesc:boolean=true
+  @State isDesc:boolean=false
   //全局单例任务列表展示
   @State store:TaskStore=taskStore
   //编辑任务
@@ -64,7 +65,10 @@ export struct TaskListPage {
       cornerRadius: 12,
       borderWidth: 0,
       width: '85%',
-      maskColor: '#99000000'
+      maskColor: '#99000000',
+      // 蒙层快速淡入即可，翻转动画由 TaskDetailDialog 内部完成
+      openAnimation: { duration: 180, curve: Curve.EaseOut },
+      closeAnimation: { duration: 220, curve: Curve.EaseIn }
     })
   }
   //学习任务弹窗控制器
@@ -118,18 +122,21 @@ export struct TaskListPage {
       cornerRadius: 12,
       borderWidth: 0,
       width: 300,
-      maskColor: '#99000000'
+      maskColor: '#99000000',
+      openAnimation: { duration: 180, curve: Curve.EaseOut },
+      closeAnimation: { duration: 220, curve: Curve.EaseIn }
     })
   }
-  //打开新增弹窗
+  //打开新增弹窗：每次重建实例以触发 aboutToAppear 内翻转动画
   openAddDialog(){
     this.editingTask=null
+    this.initTaskDialog()
     this.studyDialogController?.open()
   }
   //打开编辑弹窗（与新增弹窗是同一个）
   openEditDialog(task:TaskItem){
-    //这里让editingtask不为空
     this.editingTask=task
+    this.initTaskDialog()
     this.studyDialogController?.open()
   }
   //顶部按钮builder
@@ -171,7 +178,7 @@ export struct TaskListPage {
     //得到任务后排序
     this.applyPriority()
     //初始化，使得弹窗控制器不为空
-    this.initTaskDialog()//添加编辑弹窗
+    this.initTaskDialog()//预创建添加/编辑弹窗（打开时仍会 initTaskDialog 重建以播动画）
     // //检查今日到期任务
     // await todayDueTimeNotify()
     //刷新明日通知
@@ -192,12 +199,11 @@ export struct TaskListPage {
   }
   //按截止日期筛选函数，仅针对allTaskList
   filterDueTime():TaskItem[]{
-    //显示所有==null
+    let unfinished = this.store.tasks.filter(item => !item.isFinished)
     if(!this.filterDate){
-      return this.store.tasks
+      return unfinished
     }
-    //显示当前筛选日期任务
-    return this.store.tasks.filter((item)=>{
+    return unfinished.filter((item)=>{
       return this.isSameDay(item.dueTime,this.filterDate!)
     })
   }
@@ -206,19 +212,28 @@ export struct TaskListPage {
     //所有任务排序
     this.store.tasks = SortTask([...this.store.tasks],this.isDesc)
   }
-  //展示任务详情
+  //展示任务详情：每次新建弹窗实例，aboutToAppear 内播水平翻转动画
   showTaskDetail(task:TaskItem){
     this.currentTask=task
-    this.initDetailDialog()//详情弹窗
+    this.initDetailDialog()
     this.detailDialogController?.open()
+  }
+  /** 未完成：全部或按日期筛选 */
+  filterNotFinished(): TaskItem[] {
+    let list = this.store.tasks.filter(t => t.isFinished===false)
+    //筛选全部还是按日期
+    if (!this.filterDate) {
+      return list
+    }
+    return list.filter(item => this.isSameDay(item.dueTime, this.filterDate!))
   }
 //------------------------------------------UI----------------------------------------
   build() {
     Column() {
-      Row({ space: 12 }) {
+      Row({ space: 40 }) {
         this.topButton("今日", 0, () => { this.taskNum = 0 })
         this.topButton("所有", 1, () => { this.taskNum = 1 })
-        this.topButton("添加", -1, () => { this.openAddDialog() })
+        // this.topButton("添加", -1, () => { this.openAddDialog() })
       }
       .width('100%')
       .justifyContent(FlexAlign.Center)
@@ -241,6 +256,13 @@ export struct TaskListPage {
                   this.getUIContext().animateTo({ duration: AppMotion.NORMAL, curve: Curve.EaseOut }, () => {
                     this.headerScale = 1
                   })
+                })
+              Image($r("app.media.plus"))
+                .width(22)
+                .height(22)
+                .animation({ duration: AppMotion.NORMAL, curve: Curve.EaseInOut })
+                .onClick(() => {
+                  this.openAddDialog()
                 })
               Image(this.isDesc ? $r('app.media.Desc') : $r('app.media.Asc'))
                 .width(22)
@@ -280,23 +302,45 @@ export struct TaskListPage {
               }
             }
           }
+          .onClick(() => {
+            this.getUIContext().animateTo({ duration: AppMotion.FAST, curve: Curve.Sharp }, () => {
+              this.headerScale = 0.97
+            })
+            this.isStudyExpand = !this.isStudyExpand
+            this.getUIContext().animateTo({ duration: AppMotion.NORMAL, curve: Curve.EaseOut }, () => {
+              this.headerScale = 1
+            })
+          })
           .attributeModifier(new HeaderRowModifier())
           .justifyContent(FlexAlign.SpaceBetween)
           .scale({ x: this.headerScale, y: this.headerScale })
           .animation({ duration: AppMotion.FAST })
         }
         .margin({ bottom: 8 })
+        //学习卡片区=======================================================================
         if (this.isStudyExpand) {
-          ForEach(this.taskNum == 0 ? this.store.getToday() : this.filterDueTime(), (item: TaskItem, index: number) => {
+          if (this.taskNum==0&&this.store.getToday().length==0
+          ||this.taskNum==1&&this.filterDueTime().length==0) {
             ListItem() {
-              TaskCard({
-                task: item,
-                detailClick: async () => { this.showTaskDetail(item) }
-              })
+              Text('暂无任务')
+                .fontSize(14)
+                .fontColor($r('app.color.text_secondary'))
+                .width('100%')
+                .textAlign(TextAlign.Center)
+                .padding({ top: 24, bottom: 24 })
             }
-            .margin({ bottom: 8 })
-            .transition(listItemTransition())
-          }, (item: TaskItem) => item.id)
+          }else{
+            ForEach(this.taskNum == 0 ? this.store.getToday() : this.filterDueTime(), (item: TaskItem, index: number) => {
+              ListItem() {
+                TaskCard({
+                  task: item,
+                  detailClick: async () => { this.showTaskDetail(item) }
+                })
+              }
+              .margin({ bottom: 8 })
+              .transition(listItemTransition())
+            }, (item: TaskItem) => item.id)//
+          }
         }
       }
       .width('100%')

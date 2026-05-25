@@ -11,7 +11,7 @@ export class  TaskItem{
   priority:number=0//优先级，自定义Priority4
   isFinished:boolean=false//是否完成5
   studyCount:number=0//专注学习次数6
-  studyMinute:number=0//专注学习分钟7
+  studyMinute:number=0//记录这个任务总学习时长学习分钟7
   //一个task赋值给另一个task
   static copyTask(task:TaskItem):TaskItem{
     let newTask=new TaskItem()

@@ -2,7 +2,8 @@
 import { TaskListPage } from './TaskListPage'
 import { CountPage } from "./CountPage";
 import { AppMotion } from '../theme/AppMotion';
-
+import { HistoryPage } from './HistoryPage';
+//todo:柱状图没时间也要画日期和0；筛选没用黑金主题
 @Entry
 @Component
 struct Index {
@@ -18,9 +19,14 @@ struct Index {
         .tabBar(this.tabBarItem("任务", 0))
 
         TabContent() {
+          HistoryPage()
+        }
+        .tabBar(this.tabBarItem("历史", 1))
+
+        TabContent() {
           CountPage()
         }
-        .tabBar(this.tabBarItem("统计", 1))
+        .tabBar(this.tabBarItem("统计", 2))
       }
       .scrollable(false)
       .barMode(BarMode.Fixed)

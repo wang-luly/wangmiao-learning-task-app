@@ -127,7 +127,7 @@ export struct CountPage {
 
       // 柱顶数值
       this.ctx.fillStyle = '#E8D5A3'
-      this.ctx.font = '14px sans-serif'
+      this.ctx.font = '25px sans-serif'
       this.ctx.textAlign = 'center'
       this.ctx.textBaseline = 'bottom'
       if (this.chartAnim > 0.85) {
@@ -136,7 +136,7 @@ export struct CountPage {
 
       // 底部日期
       this.ctx.fillStyle = '#9A9A9A'
-      this.ctx.font = '11px sans-serif'
+      this.ctx.font = '25px sans-serif'
       this.ctx.textBaseline = 'top'
       this.ctx.fillText(this.weekLabels[index] ?? '', x + barW / 2, baseY + 8)
     })
@@ -203,12 +203,6 @@ export struct CountPage {
       .border({ width: 1, color: $r('app.color.border_subtle') })
       .opacity(this.cardOpacity)
       .animation({ duration: AppMotion.NORMAL })
-
-      Button('发布通知')
-        .attributeModifier(new GoldenOutlineButtonModifier())
-        .onClick(() => {
-          sendNotify('通知', '证明通知功能可以正确进行')
-        })
     }
     .width('100%')
     .height('100%')

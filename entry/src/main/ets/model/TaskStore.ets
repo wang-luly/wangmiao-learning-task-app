@@ -42,9 +42,9 @@ export class TaskStore {
   //得到今日任务
   getToday() {
     let now = new Date()
-    //过滤器选择年月日相同的写进数组
     return this.tasks.filter(t =>
-    t.dueTime.getFullYear() === now.getFullYear() &&
+      !t.isFinished &&
+      t.dueTime.getFullYear() === now.getFullYear() &&
       t.dueTime.getMonth() === now.getMonth() &&
       t.dueTime.getDate() === now.getDate()
     )

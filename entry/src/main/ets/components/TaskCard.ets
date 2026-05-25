@@ -6,6 +6,7 @@ import router from "@ohos.router";
 import { getPriorityColor } from "../theme/AppColors";
 import { GoldenOutlineButtonModifier, TaskCardMarginModifier } from "../theme/AppStyles";
 import { AppMotion, listItemTransition } from "../theme/AppMotion";
+import { taskStore, TaskStore } from "../model/TaskStore";
 
 
 //添加和修改任务对话框
@@ -13,6 +14,7 @@ import { AppMotion, listItemTransition } from "../theme/AppMotion";
 export struct TaskCard {//TaskListPage的子组件
 
   @ObjectLink task:TaskItem
+  @State store:TaskStore=taskStore
   //-------------------------------------------函数--------------------------------------------
   //回调详情
   detailClick:()=>void=()=>{}
@@ -46,18 +48,23 @@ export struct TaskCard {//TaskListPage的子组件
       }
       .alignItems(HorizontalAlign.Start)
       .layoutWeight(1)
-      //开始按钮
-      Button("开始")
+      //计时学习or删除按钮
+      Button(this.task.isFinished?"删除":"计时")
         .attributeModifier(new GoldenOutlineButtonModifier())
         .onClick(() => {
-          this.getUIContext().animateTo({ duration: AppMotion.FAST, curve: Curve.Sharp }, () => {})
-          let router = this.getUIContext().getRouter()
-          router.pushUrl({
-            url: 'pages/TimingPage',
-            params: {
-              taskId: this.task.id
-            }
-          })
+          if(this.task.isFinished==false){
+            this.getUIContext().animateTo({ duration: AppMotion.FAST, curve: Curve.Sharp }, () => {})
+            let router = this.getUIContext().getRouter()
+            router.pushUrl({
+              url: 'pages/TimingPage',
+              params: {
+                taskId: this.task.id
+              }
+            })
+          }
+          else{//删除
+            this.store.removeTask(this.task.id)
+          }
         })
     }
     .attributeModifier(new TaskCardMarginModifier())

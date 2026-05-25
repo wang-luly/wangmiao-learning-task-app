@@ -14,7 +14,7 @@ export struct TimingPage {
   @State taskName: string = '学习任务'
   @State second: number = 0
   private readonly pomodoroSeconds: number = 25 * 60
-  timer: number = -1
+  @State timer: number = -1
   task: TaskItem | null = null
 
   async aboutToAppear() {
@@ -137,12 +137,11 @@ export struct TimingPage {
       .height(280)
 
       Row({ space: 16 }) {
-        Button('开始')
+        Button(this.timer==-1?"开始":"暂停")
           .attributeModifier(new GoldenOutlineButtonModifier())
-          .onClick(() => { this.startTimer() })
-        Button('暂停')
-          .attributeModifier(new GoldenOutlineButtonModifier())
-          .onClick(() => { this.pauseTimer() })
+          .onClick(() => {
+            this.timer==-1?this.startTimer():this.pauseTimer()
+          })
         Button('结束')
           .attributeModifier(new GoldenFillButtonModifier())
           .onClick(() => { this.finishTimer() })
