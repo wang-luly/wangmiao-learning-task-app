@@ -9,7 +9,7 @@ import { SortTask } from "../utils/SortTask";
 import { TaskDetailDialog } from "../components/TaskDetailDialog";
 import { taskStore,TaskStore } from "../model/TaskStore";
 import { refreshTomorrowReminder, todayDueTimeNotify } from "../utils/NotificationUtils";
-import { HeaderRowModifier, TitleTextModifier } from "../theme/AppStyles";
+import { HeaderRowModifier } from "../theme/AppStyles";
 import { getPageSafeInsets } from "../utils/SafeAreaUtil";
 import { AppMotion, listItemTransition } from "../theme/AppMotion";
 
@@ -141,30 +141,26 @@ export struct TaskListPage {
     this.initTaskDialog()
     this.studyDialogController?.open()
   }
-  //顶部按钮builder
+  /** 标题栏内：今日 / 所有 文字分段（金字 + 底划线） */
   @Builder
-  topButton(title:string,tar:number,click:()=>void){
-    Button() {
+  scopeSegment(title: string, index: number) {
+    Column({ space: 3 }) {
       Text(title)
-        .fontSize(15)
-        .fontWeight(FontWeight.Medium)
-        .fontColor(this.taskNum === tar ? $r('app.color.gold_primary') : $r('app.color.text_secondary'))
+        .fontSize(14)
+        .fontWeight(this.taskNum === index ? FontWeight.Medium : FontWeight.Regular)
+        .fontColor(this.taskNum === index ? $r('app.color.gold_primary') : $r('app.color.text_secondary'))
+      Row()
+        .width(22)
+        .height(2)
+        .borderRadius(1)
+        .backgroundColor(this.taskNum === index ? $r('app.color.gold_primary') : Color.Transparent)
     }
-    .width(88)
-    .height(40)
-    .backgroundColor(this.taskNum === tar ? $r('app.color.bg_secondary') : $r('app.color.bg_elevated'))
-    .borderRadius(20)
-    .border({
-      width: this.taskNum === tar ? 1.5 : 1,
-      color: this.taskNum === tar ? $r('app.color.gold_primary') : $r('app.color.border_subtle')
-    })
-    .scale({
-      x: this.taskNum === tar ? 1.05 : 1,
-      y: this.taskNum === tar ? 1.05 : 1
-    })
-    .animation({ duration: AppMotion.FAST, curve: Curve.Sharp })
+    .padding({ left: 2, right: 2, top: 2, bottom: 2 })
     .onClick(() => {
-      click()
+      this.taskNum = index
+      if (index === 0) {
+        this.filterDate = null
+      }
     })
   }
 //-------------------------------------------------------函数-----------------------------------------------
@@ -238,20 +234,24 @@ export struct TaskListPage {
 //------------------------------------------UI----------------------------------------
   build() {
     Column() {
-      Row({ space: 40 }) {
-        this.topButton("今日", 0, () => { this.taskNum = 0 })
-        this.topButton("所有", 1, () => { this.taskNum = 1 })
-        // this.topButton("添加", -1, () => { this.openAddDialog() })
-      }
-      .width('100%')
-      .justifyContent(FlexAlign.Center)
-      .margin({ top: 8, bottom: 16 })
       List() {
         ListItem() {
           Row() {
-            Text("学习任务").attributeModifier(new TitleTextModifier())
             Row({ space: 12 }) {
-              Image(this.isStudyExpand ? $r("app.media.down") : $r("app.media.right"))
+              Text('学习任务')
+                .fontSize(16)
+                .fontWeight(FontWeight.Medium)
+                .fontColor($r('app.color.text_primary'))
+              Row({ space: 14 }) {
+                this.scopeSegment('今日', 0)
+                this.scopeSegment('所有', 1)
+              }
+            }
+            .layoutWeight(1)
+            .alignItems(VerticalAlign.Center)
+
+            Row({ space: 12 }) {
+              Image(this.isStudyExpand ? $r('app.media.down') : $r('app.media.right'))
                 .width(22)
                 .height(22)
                 .rotate({ angle: this.isStudyExpand ? 90 : 0 })
@@ -265,10 +265,9 @@ export struct TaskListPage {
                     this.headerScale = 1
                   })
                 })
-              Image($r("app.media.plus"))
+              Image($r('app.media.plus'))
                 .width(22)
                 .height(22)
-                .animation({ duration: AppMotion.NORMAL, curve: Curve.EaseInOut })
                 .onClick(() => {
                   this.openAddDialog()
                 })
@@ -280,12 +279,11 @@ export struct TaskListPage {
                   this.applyPriority()
                 })
               if (this.taskNum == 1) {
-                Image($r('app.media.filter'))//筛选图标
+                Image($r('app.media.filter'))
                   .width(22)
                   .height(22)
                   .onClick(() => {
-                    let promptAction = this.getUIContext().getPromptAction()
-                    promptAction.showDialog({
+                    this.getUIContext().getPromptAction().showDialog({
                       title: '截止日期选择',
                       message: '请选择筛选方式',
                       buttons: [
@@ -310,21 +308,13 @@ export struct TaskListPage {
               }
             }
           }
-          .onClick(() => {
-            this.getUIContext().animateTo({ duration: AppMotion.FAST, curve: Curve.Sharp }, () => {
-              this.headerScale = 0.97
-            })
-            this.isStudyExpand = !this.isStudyExpand
-            this.getUIContext().animateTo({ duration: AppMotion.NORMAL, curve: Curve.EaseOut }, () => {
-              this.headerScale = 1
-            })
-          })
           .attributeModifier(new HeaderRowModifier())
           .justifyContent(FlexAlign.SpaceBetween)
+          .alignItems(VerticalAlign.Center)
           .scale({ x: this.headerScale, y: this.headerScale })
           .animation({ duration: AppMotion.FAST })
         }
-        .margin({ bottom: 8 })
+        .margin({ top: 8, bottom: 8 })
         //学习卡片区=======================================================================
         if (this.isStudyExpand) {
           if (this.taskNum==0&&this.store.getToday().length==0
