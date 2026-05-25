@@ -1,3 +1,4 @@
+import { isSimulationMode } from "../config/AppConfig"
 import { taskDB } from "../database/TaskDatabase"
 import { GoldenOutlineButtonModifier, TitleTextModifier } from "../theme/AppStyles"
 import { sendNotify } from "../utils/NotificationUtils"
@@ -9,18 +10,23 @@ export struct CountPage {
   //目标学习时长
   @State targetMinute:number=240
   //近七天学习时长todo:假数据
-  @State weekData:number[]=[30,50,60,40,20,10,90]
+  @State weekData:number[]=[]
   @State weekLabels: string[] = []
   //Canvas画布
   private settings:RenderingContextSettings=new RenderingContextSettings(true)
   private ctx:CanvasRenderingContext2D=
     new CanvasRenderingContext2D(this.settings)
   //===============================函数======================================
-  async aboutToAppear(){//每次到这个页面会执行一次
+  async aboutToAppear(){//这个页面会执行一次
     //从数据库中获取今日学习总时长
     this.todayMinute=await taskDB.queryTodayStudyMinute()
-    //从数据库中获取近七天学习时长
-    this.weekData=await taskDB.queryLast7Days()
+    if(isSimulationMode()){
+      this.weekData=[30,50,60,40,20,10,90]
+    }
+    else{
+      //从数据库中获取近七天学习时长
+      this.weekData=await taskDB.queryLast7Days()
+    }
     this.weekLabels = this.buildWeekLabels()
     // 数据加载完再画一次（避免 onReady 时数据还是空的）
     this.drawWeekChart()
@@ -154,6 +160,8 @@ export struct CountPage {
           sendNotify('通知', '证明通知功能可以正确进行')
         })
     }
+    .expandSafeArea([SafeAreaType.SYSTEM, SafeAreaType.CUTOUT],
+      [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM, SafeAreaEdge.START, SafeAreaEdge.END])
     .width('100%')
     .height('100%')
     .backgroundColor($r('app.color.bg_primary'))

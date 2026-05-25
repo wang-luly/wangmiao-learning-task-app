@@ -5,6 +5,7 @@ import { data } from "@kit.TelephonyKit";
 import { StudyRecord } from "../model/StudyRecord";
 import { util } from "@kit.ArkTS";
 import { todayTimeNotify } from "../utils/NotificationUtils";
+import { GoldenFillButtonModifier, GoldenOutlineButtonModifier } from "../theme/AppStyles";
 
 @Entry
 @Component
@@ -57,9 +58,9 @@ export struct TimingPage {
       this.getUIContext().getPromptAction().showDialog({
         title:'温馨提示',
         message:'学习时长过短，不会计入学习时长',
-        buttons:[
-        {text:'继续学习',color:'#000'},
-        {text:'坚持退出',color:'#f00'}
+        buttons: [
+          { text: '继续学习', color: '#C9A962' },
+          { text: '坚持退出', color: '#9A9A9A' }
         ]
       },(err,data)=>{
         if(data.index==1){
@@ -111,12 +112,11 @@ export struct TimingPage {
   //===================================UI===========================================
   build() {
     Column({ space: 40 }) {
-      // 25 分钟圆环，任务名与时间叠在圆心
       Stack({ alignContent: Alignment.Center }) {
         Progress({
           value: this.ringProgress(),
           total: this.pomodoroSeconds,
-          type: ProgressType.Ring//圆形
+          type: ProgressType.Ring
         })
           .width(280)
           .height(280)
@@ -137,6 +137,10 @@ export struct TimingPage {
             .fontSize(56)
             .fontWeight(FontWeight.Bold)
             .fontColor($r('app.color.gold_light'))
+          // 可选：25 分钟目标提示
+          Text('25 分钟')
+            .fontSize(13)
+            .fontColor($r('app.color.text_secondary'))
         }
         .justifyContent(FlexAlign.Center)
         .alignItems(HorizontalAlign.Center)
@@ -144,28 +148,23 @@ export struct TimingPage {
       .width(280)
       .height(280)
 
-      //按钮
-      Row({ space: 20 }) {
-        Button("开始")
-          .onClick(() => {
-            this.startTimer()
-          })
-        Button("暂停")
-          .onClick(() => {
-            this.pauseTimer()
-          })
-        Button("结束")
-          .onClick(() => {
-            this.finishTimer()
-          })
+      Row({ space: 16 }) {
+        Button('开始')
+          .attributeModifier(new GoldenOutlineButtonModifier())
+          .onClick(() => { this.startTimer() })
+        Button('暂停')
+          .attributeModifier(new GoldenOutlineButtonModifier())
+          .onClick(() => { this.pauseTimer() })
+        Button('结束')
+          .attributeModifier(new GoldenFillButtonModifier())
+          .onClick(() => { this.finishTimer() })
       }
+      .justifyContent(FlexAlign.Center)
     }
-    // 页面宽度100%
     .width('100%')
-    // 页面高度100%
     .height('100%')
-
-    // 整体居中
+    .padding({ left: 16, right: 16 })
+    .backgroundColor($r('app.color.bg_primary'))
     .justifyContent(FlexAlign.Center)
   }
 }
