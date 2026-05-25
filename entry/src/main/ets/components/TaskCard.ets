@@ -3,7 +3,8 @@ import { getPriorityText } from "../utils/PriorityUtils";
 import {formatTime} from "../utils/TimeUtils";
 import { Router } from "@ohos.arkui.UIContext";
 import router from "@ohos.router";
-
+import { getPriorityColor } from "../theme/AppColors";
+import { GoldenOutlineButtonModifier, TaskCardMarginModifier } from "../theme/AppStyles";
 
 
 //添加和修改任务对话框
@@ -17,21 +18,36 @@ export struct TaskCard {//TaskListPage的子组件
 
   build() {
     Row(){
+      //左侧优先竖线条
+      Column()
+        .width(3)
+        .height(36)
+        .backgroundColor(
+          this.task.isFinished ? $r('app.color.text_muted') : getPriorityColor(this.task.priority)
+        )
+        .borderRadius(2)
+        .margin({ right: 12 })
       //名称和截止时间放在一个Column中
-      Column({space:10}){
+      Column({space:6}){
         Text(this.task.name)
+          .fontSize(16)
+          .fontWeight(FontWeight.Medium)
+          .fontColor(this.task.isFinished ? $r('app.color.text_muted') : $r('app.color.text_primary'))
           .decoration({
             type:this.task.isFinished?TextDecorationType.LineThrough:TextDecorationType.None
           })
-          .fontColor(this.task.isFinished?Color.Gray:Color.Black)
+          .maxLines(1)//最大一行
+          .textOverflow({ overflow: TextOverflow.Ellipsis })//超出以省略号显示
         Text(formatTime(this.task.dueTime))
+          .fontSize(12)
+          .fontColor($r('app.color.text_secondary'))
       }
       .alignItems(HorizontalAlign.Start)
-      .margin({left:10})
       .layoutWeight(1)
-       Blank()
       //开始按钮
-      Button("开始").onClick((event: ClickEvent) => {
+      Button("开始")
+        .attributeModifier(new GoldenOutlineButtonModifier())
+        .onClick((event: ClickEvent) => {
         let router=this.getUIContext().getRouter()
         router.pushUrl({
           url:'pages/TimingPage',
@@ -41,10 +57,7 @@ export struct TaskCard {//TaskListPage的子组件
         })
       })
     }
-    .padding(10)
-    .borderRadius(25)
-    .width("100%")
-    .backgroundColor(Color.Yellow)
+    .attributeModifier(new TaskCardMarginModifier())
     .onClick(()=>{
       this.detailClick()
     })

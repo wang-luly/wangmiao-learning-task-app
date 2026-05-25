@@ -16,17 +16,36 @@ struct Index {
         TabContent(){
           TaskListPage()//任务页
         }
-        .tabBar("任务")
+        .tabBar(this.tabBarItem("任务",0))
 
         TabContent(){
           CountPage()//统计页
         }
-        .tabBar("统计")
+        .tabBar(this.tabBarItem("统计",1))
       }
-      .scrollable(false)
+      .scrollable(false)//不显示进度条
+      .barMode(BarMode.Fixed)//tab等宽平铺，不可左右滑动
+      .barBackgroundColor($r('app.color.bg_primary'))
       .onChange((index:number)=>{
         this.currentTab=index
       })
     }
+    .width('100%')
+    .height('100%')
+    .backgroundColor($r('app.color.bg_primary'))
+  }
+
+  /**
+   * 选定底部不同tab的状态
+   * @param title
+   * @param index
+   */
+  @Builder
+  tabBarItem(title: string, index: number) {
+    Text(title)
+      .fontSize(14)
+      .fontWeight(this.currentTab === index ? FontWeight.Medium : FontWeight.Normal)
+      .fontColor(this.currentTab === index ? $r('app.color.gold_primary') : $r('app.color.text_secondary'))
+      .padding({ top: 8, bottom: 8 })
   }
 }

@@ -8,6 +8,7 @@ import { SortTask } from "../utils/SortTask";
 import { TaskDetailDialog } from "../components/TaskDetailDialog";
 import { taskStore,TaskStore } from "../model/TaskStore";
 import { refreshTomorrowReminder, todayDueTimeNotify } from "../utils/NotificationUtils";
+import { HeaderRowModifier, TitleTextModifier } from "../theme/AppStyles";
 
 @Component
 export struct TaskListPage {
@@ -111,35 +112,24 @@ export struct TaskListPage {
     this.editingTask=task
     this.studyDialogController?.open()
   }
-  @Styles//顶部按钮style
-  topButtonStyle(){
-  .width(100)
-  .height(40)
-  .backgroundColor("rgba(255,255,255,0.7)")
-  .borderRadius(25)
-}
   //顶部按钮builder
   @Builder
   topButton(title:string,tar:number,click:()=>void){
     Button() {
-      Row() {
-        Image($r("app.media.fish"))
-          .width(40)
-          .height(40)
-        Text(title)
-          .fontColor(Color.White)
-          .fontSize(16)
-          .fontColor(Color.Black)
-          .fontWeight(FontWeight.Medium)
-      }
+      Text(title)
+        .fontSize(15)
+        .fontWeight(FontWeight.Medium)
+        .fontColor(this.taskNum === tar ? $r('app.color.gold_primary') : $r('app.color.text_secondary'))
     }
-    //按键切换特效
+    .width(88)
+    .height(40)
+    .backgroundColor(this.taskNum === tar ? $r('app.color.bg_secondary') : $r('app.color.bg_elevated'))
+    .borderRadius(20)
     .border({
-      width:this.taskNum==tar?2:0,//一直都是红色，只不过控制宽度控制显示或者是不显示
-      color:Color.Red
+      width: this.taskNum === tar ? 1.5 : 1,
+      color: this.taskNum === tar ? $r('app.color.gold_primary') : $r('app.color.border_subtle')
     })
-    .topButtonStyle()
-    .onClick(()=>{
+    .onClick(() => {
       click()
     })
   }
@@ -196,121 +186,84 @@ export struct TaskListPage {
   }
 //------------------------------------------UI----------------------------------------
   build() {
-    Stack(){
-      // 整个任务页的背景图
-      Image(this.taskNum==0?$r("app.media.todayTaskBg"):$r("app.media.allTaskBg"))
-        .width("100%")
-        .height("100%")
-      //整个屏幕Column
-      Column() {
-        Row({space:20}){
-        //-------------------------顶部三个按钮------------------------------
-          //今日任务按钮
-          this.topButton("今日",0,()=>{
-            this.taskNum=0
-          })
-
-          //所有任务按钮
-          this.topButton("所有",1,()=>{
-            this.taskNum=1
-          })
-
-          //添加任务按钮
-          this.topButton("添加",-1,()=>{
-            this.openAddDialog()
-          })
-        }
-//-------------------------------------------------list展示------------------------------------------------------
-          List(){
-            //学习任务标题---------------------
-            ListItem(){
-              Row(){
-                Text("学习任务")
-                Row({space:10}){
-                  //展开图片>
-                  Image(this.isStudyExpand?$r("app.media.down"):$r("app.media.right"))
-                    .width(30)
-                    .onClick(()=>{
-                      this.isStudyExpand=!this.isStudyExpand
+    Column() {
+      Row({ space: 12 }) {
+        this.topButton("今日", 0, () => { this.taskNum = 0 })
+        this.topButton("所有", 1, () => { this.taskNum = 1 })
+        this.topButton("添加", -1, () => { this.openAddDialog() })
+      }
+      .width('100%')
+      .justifyContent(FlexAlign.Center)
+      .margin({ top: 8, bottom: 16 })
+      List() {
+        ListItem() {
+          Row() {
+            Text("学习任务").attributeModifier(new TitleTextModifier())
+            Row({ space: 12 }) {
+              Image(this.isStudyExpand ? $r("app.media.down") : $r("app.media.right"))
+                .width(22)
+                .height(22)
+                .onClick(() => { this.isStudyExpand = !this.isStudyExpand })
+              Image(this.isDesc ? $r('app.media.Desc') : $r('app.media.Asc'))
+                .width(22)
+                .height(22)
+                .onClick(() => {
+                  this.isDesc = !this.isDesc
+                  this.applyPriority()
+                })
+              if (this.taskNum == 1) {
+                Image($r('app.media.filter'))//筛选图标
+                  .width(22)
+                  .height(22)
+                  .onClick(() => {
+                    let promptAction = this.getUIContext().getPromptAction()
+                    promptAction.showDialog({
+                      title: '截止日期选择',
+                      message: '请选择筛选方式',
+                      buttons: [
+                        { text: '所有时间', color: '#C9A962' },
+                        { text: '选择日期', color: '#C9A962' }
+                      ]
+                    }, (err, data) => {
+                      if (data.index == 0) {
+                        this.filterDate = null
+                      } else if (data.index == 1) {
+                        let endDate = new Date()
+                        endDate.setFullYear(endDate.getFullYear() + 1)
+                        this.getUIContext().showDatePickerDialog({
+                          start: new Date(),
+                          end: endDate,
+                          selected: this.filterDate ?? new Date(),
+                          onDateAccept: (value: Date) => { this.filterDate = value }
+                        })
+                      }
                     })
-                  //排序图片
-                  Image(this.isDesc?$r('app.media.Desc'):$r('app.media.Asc'))
-                    .width(30)
-                    .onClick(()=>{
-                      this.isDesc=!this.isDesc
-                      this.applyPriority()
-                    })
-                  //如果是所有任务，显示按截止日期筛选的图片
-                  if(this.taskNum==1){
-                    Image($r('app.media.filter'))
-                      .width(30)
-                      .onClick(()=>{
-                        //获取promptAction对象
-                        let promptAction=this.getUIContext().getPromptAction()
-                        //显示操作菜单
-                        promptAction.showDialog({
-                          //标题
-                          title:'截止日期选择',
-                          message:'请选择筛选方式',
-                          //按钮
-                          buttons:[{text:'所有时间',color:'#000'},{text:'选择日期',color:'#000'}]
-                        },(err,data)=>{
-                          if(data.index==0){
-                            this.filterDate=null
-                          }
-                          else if(data.index==1){
-                            //设置终止日期为一年后的今天
-                            let endDate=new Date()
-                            endDate.setFullYear(endDate.getFullYear()+1)
-                            //弹出日期选择框
-                            this.getUIContext().showDatePickerDialog({
-                              start:new Date(),
-                              end:endDate,
-                              selected:this.filterDate??new Date(),
-                              onDateAccept:(value:Date)=>{
-                                this.filterDate=value
-                              }
-                            })
-                          }
-                        }
-                        )
-                      })
-                  }
-                }
-                  .margin({right:10})
-              }
-                .justifyContent(FlexAlign.SpaceBetween)//分为两侧
-                .backgroundColor(Color.Green)
-                .width("100%")
-                .height(50)
-                .padding({left:10,right:10})
-            }
-            .margin({top:10})
-
-            //学习任务列表-------------------------------
-            if(this.isStudyExpand){
-              ForEach(this.taskNum==0?this.store.getToday():this.filterDueTime(),(item:TaskItem)=>{
-                ListItem(){
-                  //TaskCard
-                  TaskCard({//这是父组件传递给子组件TaskCard,task
-                    task:item,
-                  //详情点击
-                    detailClick:async ()=>{
-                      this.showTaskDetail(item)
-                     }
                   })
-                }
-                .margin({left:10,right:10,top:5})
-              })
+              }
             }
           }
-          .width("100%")
-          .layoutWeight(1)
+          .attributeModifier(new HeaderRowModifier())
+          .justifyContent(FlexAlign.SpaceBetween)
+        }
+        .margin({ bottom: 8 })
+        if (this.isStudyExpand) {
+          ForEach(this.taskNum == 0 ? this.store.getToday() : this.filterDueTime(), (item: TaskItem) => {
+            ListItem() {
+              TaskCard({
+                task: item,
+                detailClick: async () => { this.showTaskDetail(item) }
+              })
+            }
+            .margin({ bottom: 8 })
+          })
+        }
       }
-      .justifyContent(FlexAlign.Start)
-      .width("100%")
-      .height("100%")
+      .width('100%')
+      .layoutWeight(1)
     }
-
-  }
+    .width('100%')
+    .height('100%')
+    .backgroundColor($r('app.color.bg_primary'))
+    .padding({ left: 16, right: 16, top: 12 })
+    }
 }
