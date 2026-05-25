@@ -2,6 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { AddTaskDialog } from '../components/AddTaskDialog'
 import { TaskCard } from '../components/TaskCard'
 import { TaskDetailDialog } from '../components/TaskDetailDialog'
+import { taskDB } from '../database/TaskDatabase'
 import { TaskItem } from '../model/TaskItem'
 import { taskStore, TaskStore } from '../model/TaskStore'
 import { AppMotion, listItemTransition } from '../theme/AppMotion'
@@ -136,8 +137,14 @@ export struct HistoryPage {
     return SortTask([...raw], this.isDesc)
   }
 
-  showTaskDetail(task: TaskItem) {
-    this.currentTask = task
+  async showTaskDetail(task: TaskItem) {
+    const latest = await taskDB.queryTaskById(task.id)
+    this.currentTask = latest ?? task
+    const idx = this.store.tasks.findIndex(t => t.id === task.id)
+    if (latest && idx !== -1) {
+      this.store.tasks[idx] = latest
+      this.store.tasks = [...this.store.tasks]
+    }
     this.initDetailDialog()
     this.detailDialogController?.open()
   }

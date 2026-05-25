@@ -46,15 +46,15 @@
     },
     {
       "name": "priority_high",
-      "value": "#D4AF37"
+      "value": "#C9A962"
     },
     {
       "name": "priority_mid",
-      "value": "#9A9A9A"
+      "value": "#C8C8C8"
     },
     {
       "name": "priority_low",
-      "value": "#6B6B6B"
+      "value": "#424242"
     }
   ]
 }

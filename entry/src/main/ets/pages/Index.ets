@@ -3,7 +3,6 @@ import { TaskListPage } from './TaskListPage'
 import { CountPage } from "./CountPage";
 import { AppMotion } from '../theme/AppMotion';
 import { HistoryPage } from './HistoryPage';
-//todo:柱状图没时间也要画日期和0；筛选没用黑金主题
 @Entry
 @Component
 struct Index {

@@ -179,29 +179,43 @@ export class TaskDatabase{
     return total
   }
 
-  //查询最近七天学习时长,返回仅七天学习时长数组
-  async queryLast7Days():Promise<number[]>{
-    if(!this.store) return[]
-    let startTime=new Date()
-    startTime.setDate(startTime.getDate()-6)
-    startTime.setHours(0,0,0,0)
-    //用const修饰锁定对象引用地址，不能再赋新的对象/值，但是内部属性可以改变
-    const result=await this.store.querySql(
+  /** 近 7 天每日学习分钟，无记录的天为 0，与统计页日期标签顺序一致 */
+  async queryLast7Days(): Promise<number[]> {
+    const empty7 = [0, 0, 0, 0, 0, 0, 0]
+    if (!this.store) {
+      return empty7
+    }
+    const startTime = new Date()
+    startTime.setDate(startTime.getDate() - 6)
+    startTime.setHours(0, 0, 0, 0)
+    const result = await this.store.querySql(
       `
-        SELECT studyDate,SUM(studyMinute) as total
+        SELECT studyDate, SUM(studyMinute) as total
         FROM study_record
         WHERE studyDate>=?
         GROUP BY studyDate
         ORDER BY studyDate ASC
-      `,[startTime.getTime()]
+      `,
+      [startTime.getTime()]
     )
-    let sevenDays:number[]=[]
-    while(result.goToNextRow()){
-      sevenDays.push(result.getLong(
-        result.getColumnIndex('total')
-      ))
+    const dayMap = new Map<number, number>()
+    while (result.goToNextRow()) {
+      const studyDateMs = result.getLong(result.getColumnIndex('studyDate'))
+      const total = result.getLong(result.getColumnIndex('total'))
+      const day = new Date(studyDateMs)
+      day.setHours(0, 0, 0, 0)
+      const key = day.getTime()
+      dayMap.set(key, (dayMap.get(key) ?? 0) + total)
     }
     result.close()
+
+    const sevenDays: number[] = []
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date()
+      d.setDate(d.getDate() - i)
+      d.setHours(0, 0, 0, 0)
+      sevenDays.push(dayMap.get(d.getTime()) ?? 0)
+    }
     return sevenDays
   }
 

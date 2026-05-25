@@ -12,16 +12,20 @@ export class AppColors {
   static readonly TEXT_SECONDARY: string = '#9A9A9A'
   static readonly TEXT_MUTED: string = '#5C5C5C'
   static readonly BORDER_SUBTLE: string = '#2A2A2A'
+  /** 优先级竖条：低=深灰，中=亮银，高=金（低/中对比拉大） */
+  static readonly PRIORITY_LOW: string = '#424242'
+  static readonly PRIORITY_MID: string = '#C8C8C8'
+  static readonly PRIORITY_HIGH: string = '#C9A962'
 }
 
-/** 任务卡片按优先级 优先级左侧竖条颜色：高=金，中=银灰，低=暗灰  */
+/** 任务卡片左侧竖条：高=金，中=亮银灰，低=深灰 */
 export function getPriorityColor(priority: number): string {
   switch (priority) {
     case 2:
-      return AppColors.GOLD_PRIMARY
+      return AppColors.PRIORITY_HIGH
     case 1:
-      return '#9A9A9A'
+      return AppColors.PRIORITY_MID
     default:
-      return '#6B6B6B'
+      return AppColors.PRIORITY_LOW
   }
 }

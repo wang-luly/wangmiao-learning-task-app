@@ -97,6 +97,7 @@ export struct CountPage {
     this.ctx.clearRect(0, 0, W, H)
 
     const maxVal = Math.max(...this.weekData, 1)
+    const dayCount = 7
 
     // 横向网格线
     this.ctx.strokeStyle = '#2A2A2A'
@@ -109,37 +110,39 @@ export struct CountPage {
       this.ctx.stroke()
     }
 
-    const count = this.weekData.length > 0 ? this.weekData.length : 7
     const barGap = 10
-    const barW = (chartW - barGap * (count - 1)) / count
+    const barW = (chartW - barGap * (dayCount - 1)) / dayCount
 
-    this.weekData.forEach((value, index) => {
+    for (let index = 0; index < dayCount; index++) {
+      const value = this.weekData[index] ?? 0
       const barH = (value / maxVal) * chartH * this.chartAnim
       const x = padL + index * (barW + barGap)
       const y = baseY - barH
 
-      // 金色渐变柱
-      const gradient = this.ctx.createLinearGradient(x, y, x, baseY)
-      gradient.addColorStop(0, '#E8D5A3')
-      gradient.addColorStop(1, '#8B7355')
-      this.ctx.fillStyle = gradient
-      this.ctx.fillRect(x, y, barW, barH)
+      if (barH > 0) {
+        const gradient = this.ctx.createLinearGradient(x, y, x, baseY)
+        gradient.addColorStop(0, '#E8D5A3')
+        gradient.addColorStop(1, '#8B7355')
+        this.ctx.fillStyle = gradient
+        this.ctx.fillRect(x, y, barW, barH)
+      }
 
-      // 柱顶数值
+      // 柱顶数值：0 分钟也显示
       this.ctx.fillStyle = '#E8D5A3'
       this.ctx.font = '25px sans-serif'
       this.ctx.textAlign = 'center'
       this.ctx.textBaseline = 'bottom'
-      if (this.chartAnim > 0.85) {
-        this.ctx.fillText(value.toString(), x + barW / 2, y - 4)
+      const labelY = value === 0 ? baseY - 6 : y - 4
+      if (value === 0 || this.chartAnim > 0.85) {
+        this.ctx.fillText(`${value}`, x + barW / 2, labelY)
       }
 
-      // 底部日期
+      // 底部日期（始终 7 天）
       this.ctx.fillStyle = '#9A9A9A'
       this.ctx.font = '25px sans-serif'
       this.ctx.textBaseline = 'top'
       this.ctx.fillText(this.weekLabels[index] ?? '', x + barW / 2, baseY + 8)
-    })
+    }
   }
   //=============================UI=============================================
   build() {

@@ -72,6 +72,11 @@ export struct TimingPage {
       this.task.studyCount += 1
       this.task.studyMinute += minute
       await this.store.updateTask(this.task)
+      // 计时页 task 来自 queryTaskById，与列表可能不是同一引用；写库后同步内存列表
+      const idx = this.store.tasks.findIndex(t => t.id === this.task!.id)
+      if (idx === -1) {
+        await this.store.loadTasks()
+      }
       let record = new StudyRecord(
         util.generateRandomUUID(),
         this.task.id,

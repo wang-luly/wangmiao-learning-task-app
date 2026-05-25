@@ -98,6 +98,8 @@ export struct TaskListPage {
             updated.dueTime=dueTime
             updated.priority=priority
             updated.isFinished=this.editingTask.isFinished
+            updated.studyCount=this.editingTask.studyCount
+            updated.studyMinute=this.editingTask.studyMinute
 
             await this.store.updateTask(updated)
           }else{//否则的话就是新增任务，用之前写好的新增任务逻辑
@@ -212,9 +214,15 @@ export struct TaskListPage {
     //所有任务排序
     this.store.tasks = SortTask([...this.store.tasks],this.isDesc)
   }
-  //展示任务详情：每次新建弹窗实例，aboutToAppear 内播水平翻转动画
-  showTaskDetail(task:TaskItem){
-    this.currentTask=task
+  //展示任务详情：从数据库取最新 studyCount/studyMinute，避免计时后仍显示旧数据
+  async showTaskDetail(task: TaskItem) {
+    const latest = await taskDB.queryTaskById(task.id)
+    this.currentTask = latest ?? task
+    const idx = this.store.tasks.findIndex(t => t.id === task.id)
+    if (latest && idx !== -1) {
+      this.store.tasks[idx] = latest
+      this.store.tasks = [...this.store.tasks]
+    }
     this.initDetailDialog()
     this.detailDialogController?.open()
   }
