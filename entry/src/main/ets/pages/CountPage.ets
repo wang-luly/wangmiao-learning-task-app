@@ -1,4 +1,5 @@
 import { taskDB } from "../database/TaskDatabase"
+import { GoldenOutlineButtonModifier, TitleTextModifier } from "../theme/AppStyles"
 import { sendNotify } from "../utils/NotificationUtils"
 
 @Component
@@ -9,6 +10,7 @@ export struct CountPage {
   @State targetMinute:number=240
   //近七天学习时长todo:假数据
   @State weekData:number[]=[30,50,60,40,20,10,90]
+  @State weekLabels: string[] = []
   //Canvas画布
   private settings:RenderingContextSettings=new RenderingContextSettings(true)
   private ctx:CanvasRenderingContext2D=
@@ -19,63 +21,142 @@ export struct CountPage {
     this.todayMinute=await taskDB.queryTodayStudyMinute()
     //从数据库中获取近七天学习时长
     this.weekData=await taskDB.queryLast7Days()
-
+    this.weekLabels = this.buildWeekLabels()
+    // 数据加载完再画一次（避免 onReady 时数据还是空的）
+    this.drawWeekChart()
+  }
+  /** 生成近 7 天日期标签，如 5/18 */
+  buildWeekLabels(): string[] {
+    const labels: string[] = []
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date()
+      d.setDate(d.getDate() - i)
+      labels.push(`${d.getMonth() + 1}/${d.getDate()}`)
+    }
+    return labels
   }
 
+  /** 黑金主题柱状图 */
+  drawWeekChart(): void {
+    const W = 320
+    const H = 220
+    const padL = 20
+    const padR = 16
+    const padT = 24
+    const padB = 36
+    const chartW = W - padL - padR
+    const chartH = H - padT - padB
+    const baseY = padT + chartH
+
+    this.ctx.clearRect(0, 0, W, H)
+
+    const maxVal = Math.max(...this.weekData, 1)
+
+    // 横向网格线
+    this.ctx.strokeStyle = '#2A2A2A'
+    this.ctx.lineWidth = 1
+    for (let i = 0; i <= 3; i++) {
+      const y = padT + (chartH * i) / 3
+      this.ctx.beginPath()
+      this.ctx.moveTo(padL, y)
+      this.ctx.lineTo(W - padR, y)
+      this.ctx.stroke()
+    }
+
+    const count = this.weekData.length > 0 ? this.weekData.length : 7
+    const barGap = 10
+    const barW = (chartW - barGap * (count - 1)) / count
+
+    this.weekData.forEach((value, index) => {
+      const barH = (value / maxVal) * chartH
+      const x = padL + index * (barW + barGap)
+      const y = baseY - barH
+
+      // 金色渐变柱
+      const gradient = this.ctx.createLinearGradient(x, y, x, baseY)
+      gradient.addColorStop(0, '#E8D5A3')
+      gradient.addColorStop(1, '#8B7355')
+      this.ctx.fillStyle = gradient
+      this.ctx.fillRect(x, y, barW, barH)
+
+      // 柱顶数值
+      this.ctx.fillStyle = '#E8D5A3'
+      this.ctx.font = '12px sans-serif'
+      this.ctx.textAlign = 'center'
+      this.ctx.textBaseline = 'bottom'
+      this.ctx.fillText(value.toString(), x + barW / 2, y - 4)
+
+      // 底部日期
+      this.ctx.fillStyle = '#9A9A9A'
+      this.ctx.font = '11px sans-serif'
+      this.ctx.textBaseline = 'top'
+      this.ctx.fillText(this.weekLabels[index] ?? '', x + barW / 2, baseY + 8)
+    })
+  }
   //=============================UI=============================================
   build() {
-    Column({space:20}){
-      //今日学习进度/目标学习进度------------------------------------
-      Column({space:10}){
-        Text(`今日已学习 ${this.todayMinute} 分钟/目标 ${this.targetMinute} 分钟`)
-          .fontSize(20)
-        Row({space:10}){
-          Progress({
-            value:this.todayMinute,//当前进度
-            total:this.targetMinute,//总进度，目前定好240//
-            type:ProgressType.Capsule//进度条类型
-          })
-            .height(30)
-            .width(100)
-          //进度百分比
-          Text(
-            `${Math.floor(this.todayMinute/this.targetMinute*100)}%`
-          )
-        }
-      }
-      //近期日学习柱状图
-      Column(){
-        Text("近七日学习情况")
-          .fontSize(20)
-        //柱状图(绑定ctx)
-          Canvas(this.ctx)
-            .width(300)
-            .height(200)
-            .backgroundColor('#f5f5f5')
-            .onReady(()=>{
-              const baseY=180
-              this.weekData.forEach((v,i)=>{
-                const h=(v/Math.max(...this.weekData))*baseY
-                //柱子
-                this.ctx.fillStyle='#42b983'
-                //(x,baseY-h,w,h)
-                //起始20，宽20，
-                this.ctx.fillRect(20+i*30,baseY-h,20,h)
-                //柱子上的数字
-                this.ctx.fillStyle='#333'
-                this.ctx.font='16px'
-                this.ctx.textAlign='center'
-                this.ctx.fillText(v.toString(),30+i*30,baseY-5)
-              })
-            })
-        }
+    Column({ space: 24 }) {
+      // 今日进度卡片
+      Column({ space: 12 }) {
+        Text(`今日已学习 ${this.todayMinute} 分钟`)
+          .attributeModifier(new TitleTextModifier())
+        Text(`目标 ${this.targetMinute} 分钟`)
+          .attributeModifier(new TitleTextModifier())
 
-        //发布通知按钮，用于测试通知功能
-      Button("发布通知").onClick((event: ClickEvent) => {
-        sendNotify("通知","证明通知功能可以正确进行")
-      })
+        Row({ space: 12 }) {
+          Progress({
+            value: this.todayMinute,
+            total: this.targetMinute,
+            type: ProgressType.Capsule
+          })
+            .height(10)
+            .width('100%')
+            .color($r('app.color.gold_primary'))
+            .backgroundColor($r('app.color.border_subtle'))
+
+          Text(`${Math.min(100, Math.floor(this.todayMinute / this.targetMinute * 100))}%`)
+            .fontSize(14)
+            .fontColor($r('app.color.gold_primary'))
+            .width(48)
+            .textAlign(TextAlign.End)
+        }
+        .width('100%')
+      }
+      .width('100%')
+      .padding(16)
+      .backgroundColor($r('app.color.bg_secondary'))
+      .borderRadius(12)
+      .border({ width: 1, color: $r('app.color.border_subtle') })
+
+      // 近七日柱状图卡片
+      Column({ space: 12 }) {
+        Text('近七日学习情况')
+          .attributeModifier(new TitleTextModifier())
+
+        Canvas(this.ctx)
+          .width(320)
+          .height(220)
+          .backgroundColor($r('app.color.bg_elevated'))
+          .borderRadius(8)
+          .onReady(() => {
+            this.drawWeekChart()
+          })
+      }
+      .width('100%')
+      .padding(16)
+      .backgroundColor($r('app.color.bg_secondary'))
+      .borderRadius(12)
+      .border({ width: 1, color: $r('app.color.border_subtle') })
+
+      Button('发布通知')
+        .attributeModifier(new GoldenOutlineButtonModifier())
+        .onClick(() => {
+          sendNotify('通知', '证明通知功能可以正确进行')
+        })
     }
-    .width("100%")
-    .height("100%")
+    .width('100%')
+    .height('100%')
+    .backgroundColor($r('app.color.bg_primary'))
+    .padding(16)
   }
 }

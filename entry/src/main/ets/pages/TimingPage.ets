@@ -13,6 +13,8 @@ export struct TimingPage {
   @State taskId:string=''
   @State taskName:string='学习任务'
   @State second:number=0
+  // 番茄钟一圈 25 分钟
+  private readonly pomodoroSeconds: number = 25 * 60
   //用于setInterval返回值,-1没有开启计时器
   timer:number=-1
   task:TaskItem|null=null//记录此任务
@@ -102,18 +104,46 @@ export struct TimingPage {
     let router=this.getUIContext().getRouter()
     router.back()
   }
+  // 圆环进度：满 25 分钟为 100%，超出后保持满圈
+  ringProgress(): number {
+    return Math.min(this.second, this.pomodoroSeconds)
+  }
   //===================================UI===========================================
   build() {
     Column({ space: 40 }) {
-      //任务名
-      Text(this.taskName)
-        .fontSize(28)
-        .fontWeight(FontWeight.Bold)
-      //中间时钟显示
-      Text(this.formatTime())
-        .fontSize(60)
-        .fontWeight(FontWeight.Bold)
-        .fontColor(Color.Black)
+      // 25 分钟圆环，任务名与时间叠在圆心
+      Stack({ alignContent: Alignment.Center }) {
+        Progress({
+          value: this.ringProgress(),
+          total: this.pomodoroSeconds,
+          type: ProgressType.Ring//圆形
+        })
+          .width(280)
+          .height(280)
+          .color($r('app.color.gold_primary'))
+          .backgroundColor($r('app.color.border_subtle'))
+          .style({ strokeWidth: 12 })
+
+        Column({ space: 12 }) {
+          Text(this.taskName)
+            .fontSize(22)
+            .fontWeight(FontWeight.Medium)
+            .fontColor($r('app.color.text_primary'))
+            .maxLines(2)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+            .textAlign(TextAlign.Center)
+            .width(200)
+          Text(this.formatTime())
+            .fontSize(56)
+            .fontWeight(FontWeight.Bold)
+            .fontColor($r('app.color.gold_light'))
+        }
+        .justifyContent(FlexAlign.Center)
+        .alignItems(HorizontalAlign.Center)
+      }
+      .width(280)
+      .height(280)
+
       //按钮
       Row({ space: 20 }) {
         Button("开始")
