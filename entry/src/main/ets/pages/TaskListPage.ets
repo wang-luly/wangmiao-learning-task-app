@@ -11,11 +11,13 @@ import { taskStore,TaskStore } from "../model/TaskStore";
 import { refreshTomorrowReminder, todayDueTimeNotify } from "../utils/NotificationUtils";
 import { HeaderRowModifier, TitleTextModifier } from "../theme/AppStyles";
 import { getPageSafeInsets } from "../utils/SafeAreaUtil";
+import { AppMotion, listItemTransition } from "../theme/AppMotion";
 
 @Component
 export struct TaskListPage {
   @State topInset: number = 0
   @State bottomInset: number = 0
+  @State headerScale: number = 1
   //控制是今日还是所有任务
   @State taskNum:number=0
   //控制学习任务是否展示,实现下拉框
@@ -147,6 +149,11 @@ export struct TaskListPage {
       width: this.taskNum === tar ? 1.5 : 1,
       color: this.taskNum === tar ? $r('app.color.gold_primary') : $r('app.color.border_subtle')
     })
+    .scale({
+      x: this.taskNum === tar ? 1.05 : 1,
+      y: this.taskNum === tar ? 1.05 : 1
+    })
+    .animation({ duration: AppMotion.FAST, curve: Curve.Sharp })
     .onClick(() => {
       click()
     })
@@ -224,7 +231,17 @@ export struct TaskListPage {
               Image(this.isStudyExpand ? $r("app.media.down") : $r("app.media.right"))
                 .width(22)
                 .height(22)
-                .onClick(() => { this.isStudyExpand = !this.isStudyExpand })
+                .rotate({ angle: this.isStudyExpand ? 90 : 0 })
+                .animation({ duration: AppMotion.NORMAL, curve: Curve.EaseInOut })
+                .onClick(() => {
+                  this.getUIContext().animateTo({ duration: AppMotion.FAST, curve: Curve.Sharp }, () => {
+                    this.headerScale = 0.97
+                  })
+                  this.isStudyExpand = !this.isStudyExpand
+                  this.getUIContext().animateTo({ duration: AppMotion.NORMAL, curve: Curve.EaseOut }, () => {
+                    this.headerScale = 1
+                  })
+                })
               Image(this.isDesc ? $r('app.media.Desc') : $r('app.media.Asc'))
                 .width(22)
                 .height(22)
@@ -265,10 +282,12 @@ export struct TaskListPage {
           }
           .attributeModifier(new HeaderRowModifier())
           .justifyContent(FlexAlign.SpaceBetween)
+          .scale({ x: this.headerScale, y: this.headerScale })
+          .animation({ duration: AppMotion.FAST })
         }
         .margin({ bottom: 8 })
         if (this.isStudyExpand) {
-          ForEach(this.taskNum == 0 ? this.store.getToday() : this.filterDueTime(), (item: TaskItem) => {
+          ForEach(this.taskNum == 0 ? this.store.getToday() : this.filterDueTime(), (item: TaskItem, index: number) => {
             ListItem() {
               TaskCard({
                 task: item,
@@ -276,7 +295,8 @@ export struct TaskListPage {
               })
             }
             .margin({ bottom: 8 })
-          })
+            .transition(listItemTransition())
+          }, (item: TaskItem) => item.id)
         }
       }
       .width('100%')

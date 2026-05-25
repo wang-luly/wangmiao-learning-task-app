@@ -1,7 +1,6 @@
 import { taskDB } from "../database/TaskDatabase";
 import { TaskItem } from "../model/TaskItem";
-import { TaskStore,taskStore } from "../model/TaskStore";
-import { data } from "@kit.TelephonyKit";
+import { TaskStore, taskStore } from "../model/TaskStore";
 import { StudyRecord } from "../model/StudyRecord";
 import { util } from "@kit.ArkTS";
 import { todayTimeNotify } from "../utils/NotificationUtils";
@@ -10,106 +9,96 @@ import { GoldenFillButtonModifier, GoldenOutlineButtonModifier } from "../theme/
 @Entry
 @Component
 export struct TimingPage {
-  @State store:TaskStore=taskStore//全区唯一任务卡
-  @State taskId:string=''
-  @State taskName:string='学习任务'
-  @State second:number=0
-  // 番茄钟一圈 25 分钟
+  @State store: TaskStore = taskStore
+  @State taskId: string = ''
+  @State taskName: string = '学习任务'
+  @State second: number = 0
   private readonly pomodoroSeconds: number = 25 * 60
-  //用于setInterval返回值,-1没有开启计时器
-  timer:number=-1
-  task:TaskItem|null=null//记录此任务
-  //==================================函数=============================================
-  async aboutToAppear(){
-    let router=this.getUIContext().getRouter()
-    let params=router.getParams() as Record<string,string>
-    this.taskId=params['taskId']
-    //得到数据库此id对应任务的真实数据
-    let currentTask=await taskDB.queryTaskById(this.taskId)
-    //task用来记录此任务
-    if(currentTask){
-      this.taskName=currentTask.name
-      this.task=currentTask
+  timer: number = -1
+  task: TaskItem | null = null
+
+  async aboutToAppear() {
+    let router = this.getUIContext().getRouter()
+    let params = router.getParams() as Record<string, string>
+    this.taskId = params['taskId']
+    let currentTask = await taskDB.queryTaskById(this.taskId)
+    if (currentTask) {
+      this.taskName = currentTask.name
+      this.task = currentTask
     }
   }
-  //开始计时
-  startTimer(){
-    if(this.timer!=-1) return
-    this.timer=setInterval(()=>{
+
+  startTimer() {
+    if (this.timer != -1) {
+      return
+    }
+    this.timer = setInterval(() => {
       this.second++
-    },1000)
+    }, 1000)
   }
-  //暂停计时
-  pauseTimer(){
-    if(this.timer==-1) return
-    clearInterval(this.timer)
-    this.timer=-1
-  }
-  //结束学习
-  async finishTimer(){
-    //如果计时器没有结束
-    if(this.timer!=-1){
-      clearInterval(this.timer)
-      this.timer=-1
+
+  pauseTimer() {
+    if (this.timer == -1) {
+      return
     }
-    let minute=Math.floor(this.second/60)
-    //点击结束按钮时，判断minute是否>0，如果为0，弹出窗口提示学习未满一分钟，不会计入学习时长，是否退出，下面有继续学习和退出两个按钮
-    if(minute==0) {
+    clearInterval(this.timer)
+    this.timer = -1
+  }
+
+  async finishTimer() {
+    if (this.timer != -1) {
+      clearInterval(this.timer)
+      this.timer = -1
+    }
+    let minute = Math.floor(this.second / 60)
+    if (minute == 0) {
       this.getUIContext().getPromptAction().showDialog({
-        title:'温馨提示',
-        message:'学习时长过短，不会计入学习时长',
+        title: '温馨提示',
+        message: '学习时长过短，不会计入学习时长',
         buttons: [
           { text: '继续学习', color: '#C9A962' },
           { text: '坚持退出', color: '#9A9A9A' }
         ]
-      },(err,data)=>{
-        if(data.index==1){
+      }, (err, data) => {
+        if (data.index == 1) {
           this.backPage()
-        }else if(data.index==0){//继续学习
+        } else if (data.index == 0) {
           this.startTimer()
         }
       })
       return
     }
-    //累加学习时长，学习次数
-    if(this.task){
-      this.task.studyCount+=1
-      this.task.studyMinute+=minute
-      //更新任务卡
+    if (this.task) {
+      this.task.studyCount += 1
+      this.task.studyMinute += minute
       await this.store.updateTask(this.task)
-      //更新学习记录
-      let record=new StudyRecord(
+      let record = new StudyRecord(
         util.generateRandomUUID(),
         this.task.id,
         minute,
         new Date()
       )
-      //写进数据库里
       await taskDB.insertRecord(record)
-      //点击结束后检查今日学习时长是否达标
       await todayTimeNotify()
     }
-    //最后将second重置为0
-    this.second=0
+    this.second = 0
     this.backPage()
   }
-  //显示时间格式化
-  formatTime():string{
-    let minute=Math.floor(this.second/60)
-    let second=this.second%60
-    //不足两位补两位
-    return `${minute.toString().padStart(2,'0')}:${second.toString().padStart(2,'0')}`
+
+  formatTime(): string {
+    let minute = Math.floor(this.second / 60)
+    let second = this.second % 60
+    return `${minute.toString().padStart(2, '0')}:${second.toString().padStart(2, '0')}`
   }
-  //返回上一页
-  backPage(){
-    let router=this.getUIContext().getRouter()
-    router.back()
+
+  backPage() {
+    this.getUIContext().getRouter().back()
   }
-  // 圆环进度：满 25 分钟为 100%，超出后保持满圈
+
   ringProgress(): number {
     return Math.min(this.second, this.pomodoroSeconds)
   }
-  //===================================UI===========================================
+
   build() {
     Column({ space: 40 }) {
       Stack({ alignContent: Alignment.Center }) {
@@ -137,7 +126,6 @@ export struct TimingPage {
             .fontSize(56)
             .fontWeight(FontWeight.Bold)
             .fontColor($r('app.color.gold_light'))
-          // 可选：25 分钟目标提示
           Text('25 分钟')
             .fontSize(13)
             .fontColor($r('app.color.text_secondary'))

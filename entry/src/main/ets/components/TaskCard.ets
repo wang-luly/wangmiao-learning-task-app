@@ -5,6 +5,7 @@ import { Router } from "@ohos.arkui.UIContext";
 import router from "@ohos.router";
 import { getPriorityColor } from "../theme/AppColors";
 import { GoldenOutlineButtonModifier, TaskCardMarginModifier } from "../theme/AppStyles";
+import { AppMotion, listItemTransition } from "../theme/AppMotion";
 
 
 //添加和修改任务对话框
@@ -48,18 +49,20 @@ export struct TaskCard {//TaskListPage的子组件
       //开始按钮
       Button("开始")
         .attributeModifier(new GoldenOutlineButtonModifier())
-        .onClick((event: ClickEvent) => {
-        let router=this.getUIContext().getRouter()
-        router.pushUrl({
-          url:'pages/TimingPage',
-          params:{
-            taskId:this.task.id
-          }
+        .onClick(() => {
+          this.getUIContext().animateTo({ duration: AppMotion.FAST, curve: Curve.Sharp }, () => {})
+          let router = this.getUIContext().getRouter()
+          router.pushUrl({
+            url: 'pages/TimingPage',
+            params: {
+              taskId: this.task.id
+            }
+          })
         })
-      })
     }
     .attributeModifier(new TaskCardMarginModifier())
-    .onClick(()=>{
+    .transition(listItemTransition())
+    .onClick(() => {
       this.detailClick()
     })
   }

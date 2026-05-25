@@ -1,34 +1,43 @@
 //首页大框架
 import { TaskListPage } from './TaskListPage'
-import {TimingPage} from './TimingPage'
-import {CountPage} from "./CountPage";
+import { CountPage } from "./CountPage";
+import { AppMotion } from '../theme/AppMotion';
 
 @Entry
 @Component
 struct Index {
-  @State currentTab:number=0
+  @State currentTab: number = 0
+  @State tabAnim: number = 1
 
   build() {
-    Column(){
-      //底部任务页，计时学习页，统计页tab
-      Tabs({index:this.currentTab,barPosition:BarPosition.End}){
-        //首页
-        TabContent(){
-          TaskListPage()//任务页
+    Column() {
+      Tabs({ index: this.currentTab, barPosition: BarPosition.End }) {
+        TabContent() {
+          TaskListPage()
         }
-        .tabBar(this.tabBarItem("任务",0))
+        .tabBar(this.tabBarItem("任务", 0))
 
-        TabContent(){
-          CountPage()//统计页
+        TabContent() {
+          CountPage()
         }
-        .tabBar(this.tabBarItem("统计",1))
+        .tabBar(this.tabBarItem("统计", 1))
       }
-      .scrollable(false)//不显示进度条
-      .barMode(BarMode.Fixed)//tab等宽平铺，不可左右滑动
+      .scrollable(false)
+      .barMode(BarMode.Fixed)
       .barBackgroundColor($r('app.color.bg_primary'))
-      .onChange((index:number)=>{
-        this.currentTab=index
+      .animationDuration(AppMotion.NORMAL)
+      .barOverlap(true)
+      .onChange((index: number) => {
+        this.getUIContext().animateTo({ duration: AppMotion.FAST, curve: Curve.Sharp }, () => {
+          this.tabAnim = 0.92
+        })
+        this.currentTab = index
+        this.getUIContext().animateTo({ duration: AppMotion.NORMAL, curve: Curve.EaseOut }, () => {
+          this.tabAnim = 1
+        })
       })
+      .opacity(this.tabAnim)
+      .animation({ duration: AppMotion.NORMAL, curve: Curve.EaseOut })
     }
     .width('100%')
     .height('100%')
@@ -37,17 +46,27 @@ struct Index {
       [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM, SafeAreaEdge.START, SafeAreaEdge.END])
   }
 
-  /**
-   * 选定底部不同tab的状态
-   * @param title
-   * @param index
-   */
   @Builder
   tabBarItem(title: string, index: number) {
-    Text(title)
-      .fontSize(14)
-      .fontWeight(this.currentTab === index ? FontWeight.Medium : FontWeight.Normal)
-      .fontColor(this.currentTab === index ? $r('app.color.gold_primary') : $r('app.color.text_secondary'))
-      .padding({ top: 8, bottom: 8 })
+    Column({ space: 4 }) {
+      Text(title)
+        .fontSize(this.currentTab === index ? 15 : 14)
+        .fontWeight(this.currentTab === index ? FontWeight.Bold : FontWeight.Normal)
+        .fontColor(this.currentTab === index ? $r('app.color.gold_primary') : $r('app.color.text_secondary'))
+        .scale({
+          x: this.currentTab === index ? 1.08 : 1,
+          y: this.currentTab === index ? 1.08 : 1
+        })
+        .animation({ duration: AppMotion.FAST, curve: Curve.Sharp })
+      if (this.currentTab === index) {
+        Row()
+          .width(20)
+          .height(3)
+          .borderRadius(2)
+          .backgroundColor($r('app.color.gold_primary'))
+          .transition(TransitionEffect.OPACITY.combine(TransitionEffect.scale({ x: 0.5, y: 1 })))
+      }
+    }
+    .padding({ top: 8, bottom: 8 })
   }
 }

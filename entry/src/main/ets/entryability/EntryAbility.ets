@@ -27,6 +27,7 @@ export default class EntryAbility extends UIAbility {
   async onWindowStageCreate(windowStage: window.WindowStage): Promise<void> {
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onWindowStageCreate');
     this.mainWindowStage = windowStage
+    await this.setImmersiveWindow(windowStage)
 
     windowStage.loadContent('pages/Index', (err) => {
       if (err) {
@@ -34,7 +35,6 @@ export default class EntryAbility extends UIAbility {
         return;
       }
       hilog.info(DOMAIN, 'testTag', 'Succeeded in loading the content.');
-      this.setImmersiveWindow(windowStage);
     });
     //初始化上下文
     initNotificationContext(this.context);
