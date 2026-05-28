@@ -61,5 +61,5 @@ export class TaskStore {
     )
   }
 }
-//单例模式taskStore，全局公用一份tasks和方法
+//单例模式taskStore，全局共用一份tasks和方法
 export const taskStore = new TaskStore()

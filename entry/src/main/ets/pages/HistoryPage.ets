@@ -26,20 +26,6 @@ export struct HistoryPage {
     this.detailDialogController = new CustomDialogController({
       builder: TaskDetailDialog({
         task: this.currentTask,
-        // editClick: () => {
-        //   this.detailDialogController?.close()
-        //   this.openEditDialog(this.currentTask!)
-        // },
-        // finishClick: () => {
-        //   this.currentTask!.isFinished = false
-        //   this.store.updateTask(this.currentTask!)
-        //   this.detailDialogController?.close()
-        // },
-        // deleteClick: () => {
-        //   this.store.removeTask(this.currentTask!.id)
-        //   this.currentTask = null
-        //   this.detailDialogController?.close()
-        // }
       }),
       autoCancel: true,
       alignment: DialogAlignment.Center,
@@ -52,47 +38,6 @@ export struct HistoryPage {
     })
   }
 
-  // initTaskDialog() {
-  //   this.studyDialogController = new CustomDialogController({
-  //     builder: AddTaskDialog({
-  //       editingTask: this.editingTask,
-  //       confirm: async (taskName: string, dueTime: Date, priority: number) => {
-  //         if (!taskName || taskName.trim().length == 0) {
-  //           this.getUIContext().getPromptAction().showToast({ message: '任务名不能为空' })
-  //           return
-  //         }
-  //         if (this.editingTask) {
-  //           let updated = new TaskItem()
-  //           updated.id = this.editingTask.id
-  //           updated.name = taskName
-  //           updated.dueTime = dueTime
-  //           updated.priority = priority
-  //           updated.isFinished = this.editingTask.isFinished
-  //           updated.studyCount = this.editingTask.studyCount
-  //           updated.studyMinute = this.editingTask.studyMinute
-  //           await this.store.updateTask(updated)
-  //         }
-  //         this.editingTask = null
-  //       }
-  //     }),
-  //     autoCancel: true,
-  //     alignment: DialogAlignment.Center,
-  //     customStyle: true,
-  //     backgroundColor: $r('app.color.bg_secondary'),
-  //     cornerRadius: 12,
-  //     borderWidth: 0,
-  //     width: 300,
-  //     maskColor: '#99000000',
-  //     openAnimation: { duration: 180, curve: Curve.EaseOut },
-  //     closeAnimation: { duration: 220, curve: Curve.EaseIn }
-  //   })
-  // }
-
-  // openEditDialog(task: TaskItem) {
-  //   this.editingTask = task
-  //   this.initTaskDialog()
-  //   this.studyDialogController?.open()
-  // }
 
   async aboutToAppear() {
     const insets = await getPageSafeInsets(this.getUIContext().getHostContext() as common.UIAbilityContext)
@@ -107,16 +52,7 @@ export struct HistoryPage {
       && date1.getDate() == date2.getDate()
   }
 
-  // /** 已完成：今日 */
-  // getTodayFinished(): TaskItem[] {
-  //   let now = new Date()
-  //   return this.store.tasks.filter(t =>
-  //     t.isFinished &&
-  //     t.dueTime.getFullYear() === now.getFullYear() &&
-  //     t.dueTime.getMonth() === now.getMonth() &&
-  //     t.dueTime.getDate() === now.getDate()
-  //   )
-  // }
+
 
   /** 已完成：全部或按日期筛选 */
   filterFinished(): TaskItem[] {
@@ -147,41 +83,11 @@ export struct HistoryPage {
     this.detailDialogController?.open()
   }
 
-  // @Builder
-  // topButton(title: string, tar: number, click: () => void) {
-  //   Button() {
-  //     Text(title)
-  //       .fontSize(15)
-  //       .fontWeight(FontWeight.Medium)
-  //       .fontColor(this.taskNum === tar ? $r('app.color.gold_primary') : $r('app.color.text_secondary'))
-  //   }
-  //   .width(88)
-  //   .height(40)
-  //   .backgroundColor(this.taskNum === tar ? $r('app.color.bg_secondary') : $r('app.color.bg_elevated'))
-  //   .borderRadius(20)
-  //   .border({
-  //     width: this.taskNum === tar ? 1.5 : 1,
-  //     color: this.taskNum === tar ? $r('app.color.gold_primary') : $r('app.color.border_subtle')
-  //   })
-  //   .scale({
-  //     x: this.taskNum === tar ? 1.05 : 1,
-  //     y: this.taskNum === tar ? 1.05 : 1
-  //   })
-  //   .animation({ duration: AppMotion.FAST, curve: Curve.Sharp })
-  //   .onClick(() => {
-  //     click()
-  //   })
-  // }
+
 
   build() {
     Column() {
-      // Row({ space: 40 }) {
-      //   this.topButton('今日', 0, () => { this.taskNum = 0 })
-      //   this.topButton('所有', 1, () => { this.taskNum = 1 })
-      // }
-      // .width('100%')
-      // .justifyContent(FlexAlign.Center)
-      // .margin({ top: 8, bottom: 16 })
+
 
       List() {
         ListItem() {
