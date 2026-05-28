@@ -181,12 +181,14 @@ export class TaskDatabase{
 
   /** 近 7 天每日学习分钟，无记录的天为 0，与统计页日期标签顺序一致 */
   async queryLast7Days(): Promise<number[]> {
+    //没有数据时，默认为0
     const empty7 = [0, 0, 0, 0, 0, 0, 0]
+    //store为数据库句柄，打开失败
     if (!this.store) {
       return empty7
     }
     const startTime = new Date()
-    startTime.setDate(startTime.getDate() - 6)
+    startTime.setDate(startTime.getDate() - 6)//将开始时间设为六天前进行学习记录表数据库查找
     startTime.setHours(0, 0, 0, 0)
     const result = await this.store.querySql(
       `
@@ -198,10 +200,11 @@ export class TaskDatabase{
       `,
       [startTime.getTime()]
     )
+    //存储日期->总分钟
     const dayMap = new Map<number, number>()
     while (result.goToNextRow()) {
-      const studyDateMs = result.getLong(result.getColumnIndex('studyDate'))
-      const total = result.getLong(result.getColumnIndex('total'))
+      const studyDateMs = result.getLong(result.getColumnIndex('studyDate'))//学习日期
+      const total = result.getLong(result.getColumnIndex('total'))//sum(StudyMinute) as total
       const day = new Date(studyDateMs)
       day.setHours(0, 0, 0, 0)
       const key = day.getTime()
@@ -209,10 +212,10 @@ export class TaskDatabase{
     }
     result.close()
 
-    const sevenDays: number[] = []
-    for (let i = 6; i >= 0; i--) {
+    const sevenDays: number[] = []//近七日学习时间数组
+    for (let i = 6; i >= 0; i--) {//从后往前写日期
       const d = new Date()
-      d.setDate(d.getDate() - i)
+      d.setDate(d.getDate() - i)//日期--
       d.setHours(0, 0, 0, 0)
       sevenDays.push(dayMap.get(d.getTime()) ?? 0)
     }

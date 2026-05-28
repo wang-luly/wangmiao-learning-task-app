@@ -39,7 +39,7 @@ export struct CountPage {
       //从数据库中获取近七天学习时长
       this.weekData=await taskDB.queryLast7Days()
     }
-    this.weekLabels = this.buildWeekLabels()
+    this.weekLabels = this.buildWeekLabels()//7日日期标签
     this.getUIContext().animateTo({ duration: AppMotion.NORMAL, curve: Curve.EaseOut }, () => {
       this.cardOpacity = 1
     })

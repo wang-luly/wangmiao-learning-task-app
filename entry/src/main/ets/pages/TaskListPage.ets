@@ -197,7 +197,7 @@ export struct TaskListPage {
       && date1.getMonth()==date2.getMonth()
       && date1.getDate()==date2.getDate()
   }
-  /** 今日未完成（在页面内读 store.tasks，确保「今日」视图能响应列表更新） */
+  /** 今日未完成（在页面内读 store.tasks，确保今日视图能响应列表更新） */
   getTodayTasks(): TaskItem[] {
     const now = new Date()
     return this.store.tasks.filter(t =>

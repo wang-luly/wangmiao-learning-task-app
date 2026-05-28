@@ -66,8 +66,9 @@ export struct TimingPage {
           this.startTimer()
         }
       })
-      return
+      return//小于一分钟直接return，不记录
     }
+    //计时学习时长大于一分钟
     if (this.task) {
       this.task.studyCount += 1
       this.task.studyMinute += minute
@@ -83,7 +84,7 @@ export struct TimingPage {
         minute,
         new Date()
       )
-      await taskDB.insertRecord(record)
+      await taskDB.insertRecord(record)//插入学习记录表
       await todayTimeNotify()
     }
     this.second = 0
