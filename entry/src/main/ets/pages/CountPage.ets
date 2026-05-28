@@ -48,7 +48,7 @@ export struct CountPage {
     }
     return labels
   }
-
+//todo:count页面无法得到最新数据
   /** 黑金主题柱状图 */
   drawWeekChart(): void {
     const W = 320
