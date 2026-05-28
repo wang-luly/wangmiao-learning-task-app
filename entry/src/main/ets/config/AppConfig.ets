@@ -1,5 +1,5 @@
 export class AppConfig{
-  static simulationMode:boolean=true
+  static simulationMode:boolean=false
 }
 
 export function isSimulationMode():boolean{

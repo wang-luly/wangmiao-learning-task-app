@@ -6,9 +6,6 @@ import {
   TitleTextModifier
 } from "../theme/AppStyles"
 
-/** 添加/编辑弹窗水平翻转入场时长（毫秒） */
-const FLIP_IN_DURATION: number = 620
-
 @CustomDialog
 export struct AddTaskDialog {
   controller: CustomDialogController
@@ -19,12 +16,6 @@ export struct AddTaskDialog {
   @State priority: number = Priority.LOW
   editingTask: TaskItem | null = null
   priorityList: SelectOption[] = [{ value: "低" }, { value: "中" }, { value: "高" }]
-
-  @State animScale: number = 0.12
-  @State flipScaleX: number = 0.02
-  /** 绕 Y 轴水平翻转：180° → 0° */
-  @State flipAngleY: number = 180
-  @State animOpacity: number = 0
 
   confirm: (taskName: string, dueTime: Date, priority: number) => void = () => {}
 
@@ -38,26 +29,6 @@ export struct AddTaskDialog {
       this.dueTime = this.editingTask.dueTime
       this.priority = this.editingTask.priority
     }
-    setTimeout(() => {
-      this.playHorizontalFlipIn()
-    }, 50)
-  }
-
-  /** 水平绕 Y 轴 180°→0°，由小变大淡入 */
-  playHorizontalFlipIn(): void {
-    this.animScale = 0.12
-    this.flipScaleX = 0.02
-    this.flipAngleY = 180
-    this.animOpacity = 0
-    this.getUIContext().animateTo({
-      duration: FLIP_IN_DURATION,
-      curve: Curve.EaseInOut
-    }, () => {
-      this.animScale = 1
-      this.flipScaleX = 1
-      this.flipAngleY = 0
-      this.animOpacity = 1
-    })
   }
 
   build() {
@@ -156,15 +127,5 @@ export struct AddTaskDialog {
     .backgroundColor($r('app.color.bg_secondary'))
     .borderRadius(12)
     .border({ width: 1, color: $r('app.color.border_subtle') })
-    .rotate({
-      x: 0,
-      y: 1,
-      z: 0,
-      angle: this.flipAngleY,
-      centerX: '50%',
-      centerY: '50%'
-    })
-    .scale({ x: this.animScale * this.flipScaleX, y: this.animScale })
-    .opacity(this.animOpacity)
   }
 }

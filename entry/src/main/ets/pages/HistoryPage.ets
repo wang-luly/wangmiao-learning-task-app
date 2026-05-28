@@ -5,7 +5,6 @@ import { TaskDetailDialog } from '../components/TaskDetailDialog'
 import { taskDB } from '../database/TaskDatabase'
 import { TaskItem } from '../model/TaskItem'
 import { taskStore, TaskStore } from '../model/TaskStore'
-import { AppMotion, listItemTransition } from '../theme/AppMotion'
 import { HeaderRowModifier, TitleTextModifier } from '../theme/AppStyles'
 import { getPageSafeInsets } from '../utils/SafeAreaUtil'
 import { SortTask } from '../utils/SortTask'
@@ -14,7 +13,6 @@ import { SortTask } from '../utils/SortTask'
 export struct HistoryPage {
   @State topInset: number = 0
   @State bottomInset: number = 0
-  @State headerScale: number = 1
   // @State taskNum: number = 0
   @State isHistoryExpand: boolean = true//默认展开
   @State isDesc: boolean = false//默认升序排序
@@ -50,9 +48,7 @@ export struct HistoryPage {
       cornerRadius: 12,
       borderWidth: 0,
       width: '85%',
-      maskColor: '#99000000',
-      openAnimation: { duration: 180, curve: Curve.EaseOut },
-      closeAnimation: { duration: 220, curve: Curve.EaseIn }
+      maskColor: '#99000000'
     })
   }
 
@@ -196,15 +192,8 @@ export struct HistoryPage {
                 .width(22)
                 .height(22)
                 .rotate({ angle: this.isHistoryExpand ? 90 : 0 })
-                .animation({ duration: AppMotion.NORMAL, curve: Curve.EaseInOut })
                 .onClick(() => {
-                  this.getUIContext().animateTo({ duration: AppMotion.FAST, curve: Curve.Sharp }, () => {
-                    this.headerScale = 0.97
-                  })
                   this.isHistoryExpand = !this.isHistoryExpand
-                  this.getUIContext().animateTo({ duration: AppMotion.NORMAL, curve: Curve.EaseOut }, () => {
-                    this.headerScale = 1
-                  })
                 })
               Image(this.isDesc ? $r('app.media.Desc') : $r('app.media.Asc'))
                 .width(22)
@@ -241,18 +230,10 @@ export struct HistoryPage {
             }
           }
           .onClick(() => {
-            this.getUIContext().animateTo({ duration: AppMotion.FAST, curve: Curve.Sharp }, () => {
-              this.headerScale = 0.97
-            })
             this.isHistoryExpand = !this.isHistoryExpand
-            this.getUIContext().animateTo({ duration: AppMotion.NORMAL, curve: Curve.EaseOut }, () => {
-              this.headerScale = 1
-            })
           })
           .attributeModifier(new HeaderRowModifier())
           .justifyContent(FlexAlign.SpaceBetween)
-          .scale({ x: this.headerScale, y: this.headerScale })
-          .animation({ duration: AppMotion.FAST })
         }
         .margin({ bottom: 8 })
 //=================================================================================================
@@ -275,7 +256,6 @@ export struct HistoryPage {
                 })
               }
               .margin({ bottom: 8 })
-              .transition(listItemTransition())
             }, (item: TaskItem) => `${item.id}_${item.name}_${item.dueTime.getTime()}`)
           }
         }

@@ -1,11 +1,7 @@
 import {TaskItem} from "../model/TaskItem";
-import { getPriorityText } from "../utils/PriorityUtils";
 import {formatTime} from "../utils/TimeUtils";
-import { Router } from "@ohos.arkui.UIContext";
-import router from "@ohos.router";
 import { getPriorityColor } from "../theme/AppColors";
-import { GoldenOutlineButtonModifier, TaskCardMarginModifier } from "../theme/AppStyles";
-import { AppMotion, listItemTransition } from "../theme/AppMotion";
+import { GoldenOutlineButtonModifier } from "../theme/AppStyles";
 import { taskStore, TaskStore } from "../model/TaskStore";
 
 
@@ -62,7 +58,6 @@ export struct TaskCard {//TaskListPage的子组件
         .attributeModifier(new GoldenOutlineButtonModifier())
         .onClick(() => {
           if(this.task.isFinished==false){
-            this.getUIContext().animateTo({ duration: AppMotion.FAST, curve: Curve.Sharp }, () => {})
             let router = this.getUIContext().getRouter()
             router.pushUrl({
               url: 'pages/TimingPage',
@@ -77,7 +72,6 @@ export struct TaskCard {//TaskListPage的子组件
         })
     }
     .taskCardContainerStyle()
-    .transition(listItemTransition())
     .onClick(() => {
       this.detailClick()
     })

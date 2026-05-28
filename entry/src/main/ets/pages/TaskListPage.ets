@@ -11,13 +11,10 @@ import { taskStore,TaskStore } from "../model/TaskStore";
 import { refreshTomorrowReminder, todayDueTimeNotify } from "../utils/NotificationUtils";
 import { HeaderRowModifier } from "../theme/AppStyles";
 import { getPageSafeInsets } from "../utils/SafeAreaUtil";
-import { AppMotion, listItemTransition } from "../theme/AppMotion";
-
 @Component
 export struct TaskListPage {
   @State topInset: number = 0
   @State bottomInset: number = 0
-  @State headerScale: number = 1
   //控制是今日还是所有任务
   @State taskNum:number=0
   //控制学习任务是否展示,实现下拉框
@@ -65,10 +62,7 @@ export struct TaskListPage {
       cornerRadius: 12,
       borderWidth: 0,
       width: '85%',
-      maskColor: '#99000000',
-      // 蒙层快速淡入即可，翻转动画由 TaskDetailDialog 内部完成
-      openAnimation: { duration: 180, curve: Curve.EaseOut },
-      closeAnimation: { duration: 220, curve: Curve.EaseIn }
+      maskColor: '#99000000'
     })
   }
   //学习任务弹窗控制器
@@ -124,12 +118,10 @@ export struct TaskListPage {
       cornerRadius: 12,
       borderWidth: 0,
       width: 300,
-      maskColor: '#99000000',
-      openAnimation: { duration: 180, curve: Curve.EaseOut },
-      closeAnimation: { duration: 220, curve: Curve.EaseIn }
+      maskColor: '#99000000'
     })
   }
-  //打开新增弹窗：每次重建实例以触发 aboutToAppear 内翻转动画
+  //打开新增弹窗：每次重建实例以刷新编辑数据
   openAddDialog(){
     this.editingTask=null
     this.initTaskDialog()
@@ -270,15 +262,8 @@ export struct TaskListPage {
                 .width(22)
                 .height(22)
                 .rotate({ angle: this.isStudyExpand ? 90 : 0 })
-                .animation({ duration: AppMotion.NORMAL, curve: Curve.EaseInOut })
                 .onClick(() => {
-                  this.getUIContext().animateTo({ duration: AppMotion.FAST, curve: Curve.Sharp }, () => {
-                    this.headerScale = 0.97
-                  })
                   this.isStudyExpand = !this.isStudyExpand
-                  this.getUIContext().animateTo({ duration: AppMotion.NORMAL, curve: Curve.EaseOut }, () => {
-                    this.headerScale = 1
-                  })
                 })
               Image($r('app.media.plus'))
                 .width(22)
@@ -326,8 +311,6 @@ export struct TaskListPage {
           .attributeModifier(new HeaderRowModifier())
           .justifyContent(FlexAlign.SpaceBetween)
           .alignItems(VerticalAlign.Center)
-          .scale({ x: this.headerScale, y: this.headerScale })
-          .animation({ duration: AppMotion.FAST })
         }
         .margin({ top: 8, bottom: 8 })
         //学习卡片区=======================================================================
@@ -351,7 +334,6 @@ export struct TaskListPage {
                 })
               }
               .margin({ bottom: 8 })
-              .transition(listItemTransition())
             }, (item: TaskItem) => `${item.id}_${item.name}_${item.dueTime.getTime()}`)//
           }
         }

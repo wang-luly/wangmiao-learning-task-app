@@ -3,10 +3,10 @@ import { isSimulationMode } from "../config/AppConfig"
 import { taskDB } from "../database/TaskDatabase"
 import { TitleTextModifier } from "../theme/AppStyles"
 import { getPageSafeInsets } from "../utils/SafeAreaUtil"
-import { AppMotion } from "../theme/AppMotion"
-
 @Component
 export struct CountPage {
+  //解决CountPage无法实时更新页面数据的bug
+  @Prop @Watch('onRefreshTick') refreshTick:number=0
   @State topInset: number = 0
   @State bottomInset: number = 0
   //今日学习总时长
@@ -22,10 +22,38 @@ export struct CountPage {
   private ctx:CanvasRenderingContext2D=
     new CanvasRenderingContext2D(this.settings)
   //===============================函数======================================
+  /**
+   * 生命周期函数
+   */
   async aboutToAppear(){
     const insets = await getPageSafeInsets(this.getUIContext().getHostContext() as common.UIAbilityContext)
     this.topInset = insets.top
     this.bottomInset = insets.bottom
+    //第一次调用加载学习数据函数，后续用onRefreshTick函数
+    await this.loadStudyData()
+    // if(isSimulationMode()){
+    //   this.weekData=[30,50,60,40,20,10,90]
+    //   this.todayMinute=100
+    // }
+    // else{
+    //   this.todayMinute=await taskDB.queryTodayStudyMinute()
+    //   this.weekData=await taskDB.queryLast7Days()
+    // }
+    // this.weekLabels = this.buildWeekLabels()
+    // this.drawWeekChart()
+  }
+
+  /**
+   * 实时监测,得到最新数据库里的学习数据函数
+   */
+  onRefreshTick():void{
+    void this.loadStudyData()
+  }
+
+  /**
+   * 加载数据函数
+   */
+  async loadStudyData():Promise<void>{
     if(isSimulationMode()){
       this.weekData=[30,50,60,40,20,10,90]
       this.todayMinute=100
@@ -48,7 +76,6 @@ export struct CountPage {
     }
     return labels
   }
-//todo:count页面无法得到最新数据
   /** 黑金主题柱状图 */
   drawWeekChart(): void {
     const W = 320
@@ -120,13 +147,12 @@ export struct CountPage {
           Progress({
             value: this.todayMinute,
             total: this.targetMinute,
-            type: ProgressType.Capsule
+            type: ProgressType.Capsule//胶囊形
           })
             .height(10)
             .width('80%')
             .color($r('app.color.gold_primary'))
             .backgroundColor($r('app.color.border_subtle'))
-            .animation({ duration: AppMotion.SLOW, curve: Curve.EaseOut })
 
           Text(`${Math.min(100, Math.floor(this.todayMinute / this.targetMinute * 100))}%`)
             .fontSize(14)
