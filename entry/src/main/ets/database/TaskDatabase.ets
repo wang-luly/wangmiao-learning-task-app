@@ -217,7 +217,7 @@ export class TaskDatabase{
       const d = new Date()
       d.setDate(d.getDate() - i)//日期--
       d.setHours(0, 0, 0, 0)
-      sevenDays.push(dayMap.get(d.getTime()) ?? 0)
+      sevenDays.push(dayMap.get(d.getTime()) ?? 0)//map用key查找value
     }
     return sevenDays
   }
