@@ -13,18 +13,18 @@ import { isSimulationMode } from "../config/AppConfig";
 let tomorrowReminderId:number|null=null
 
 //Preference用来持久化日程id
-const CALENDAR_PREF_NAME='calendar_reminder_store'
-const CALENDAR_EVENT_ID_KEY='morningEventId'
+const CALENDAR_PREF_NAME='calendar_reminder_store'//Preferences文件名
+const CALENDAR_EVENT_ID_KEY='morningEventId'//存上次创建的日程id
 //写入系统日历的日程标题
 const MORNING_EVENT_TITLE='待办任务提醒'
 //提醒时间
-const REMINDER_HOUR=8
+const REMINDER_HOUR=8 //设置为8：00
 const REMINDER_MINUTE=0
 //为了方便调试
 const USE_TEST_REMINDER_TIME=true
 //内存中的日程id
 let morningEventid:number|null=null
-//避免并发
+//避免并发，防止refresh重入
 let isRefreshingReminder=false
 
 //保存app全局上下文，用于后台通知
@@ -41,8 +41,10 @@ export async function sendNotify(title:string,content:string){
   if(!appContext) return
   const request:notificationManager.NotificationRequest={
     id:200496,  //唯一id，相同id会覆盖原通知
+    //通知渠道类型
     notificationSlotType:notificationManager.SlotType.SOCIAL_COMMUNICATION,//通知类型
     content:{
+      //普通文本：标题+正文
       notificationContentType:notificationManager.ContentType.NOTIFICATION_CONTENT_BASIC_TEXT,
       normal:{
         title:title,
@@ -112,7 +114,7 @@ export async function todayDueTimeNotify(){
 //申请普通通知权限
 export async function requestNotificationPermission(): Promise<void> {
     try {
-      //
+      //弹出系统是否允许通知
       await notificationManager.requestEnableNotification();
       console.info('[notification] 通知权限请求已发送');
     } catch (err) {
@@ -129,11 +131,12 @@ export  async function requestCalendarPermission():Promise<boolean>{
   }
   const permissions:Permissions[]=['ohos.permission.READ_CALENDAR','ohos.permission.WRITE_CALENDAR']
   try {
+    //创建权限管理器实例
     const atManager = abilityAccessCtrl.createAtManager()
-    //弹出系统权限对话框
+    //弹出系统权限对话框，让用户选择允许或拒绝
     const result = await atManager.requestPermissionsFromUser(appContext,permissions)
     //检查每一项是否都是PERMISSION_GRANTED
-    const granted=result.authResults.every((status)=> status===abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED)
+    const granted=result.authResults.every((status)=> status===abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED)//每一项用户都点了允许
     if(!granted){
       console.log('[calendar] 日历权限未全部授予，请到系统设置手动打开')
     }
@@ -160,13 +163,14 @@ export async function refreshTomorrowReminder() {
   isRefreshingReminder=true
 
   try{
-    //确认日程权限
+    //确认日程权限，这里已经授权过了不会再次弹窗
     const hasPermission = await requestCalendarPermission()
     if(!hasPermission){
       return
     }
-    //获取系统日历对象
+    //获取系统日历对象，拿到系统日历管理器
     const calendarMgr=calendarManager.getCalendarManager(appContext)
+    //拿到默认日历
     const calendar=await calendarMgr.getCalendar()
     //删除旧日程
     await deleteMorningCalendarEvent(calendar)
@@ -187,20 +191,22 @@ export async function refreshTomorrowReminder() {
 
     //拼接通知内容
     const taskNames=tasks.map(t=>t.name).join('、')
+    //将开始时间设置为下一次提醒时间
     const startTime=remindTime.getTime()
 
     //构造日历事件
     const event:calendarManager.Event={
       type:calendarManager.EventType.NORMAL,  //普通日程
-      title:MORNING_EVENT_TITLE,              //日历里显示的标题
+      title:MORNING_EVENT_TITLE,              //日历里显示的标题，变量
       description:`你有${tasks.length}个任务需要完成：${taskNames}`,//通知正文
       startTime:startTime,
-      endTime:startTime+30*60*1000,
+      endTime:startTime+30*60*1000,             //占位
       isAllDay:false,                          //非全天事件
       reminderTime:[0]                        //提前0分钟开始提醒
     }
 
     //写入系统日历
+    //调用日历自带函数
     const eventId = await calendar.addEvent(event)
     await saveStoredEventId(eventId)
     console.info(`[calendar] 日程创建成功 id=${eventId}`)
@@ -251,10 +257,12 @@ function getTaskNotFinished(date: Date) :TaskItem[]{
  * 从Preference读取上次创建的日程id
  */
 async function loadStoredEventId():Promise<number|null> {
+  //不为空，有上次创建的id，直接返回
   if(morningEventid!==null)
     return morningEventid
   if(!appContext)
     return null
+  //得到对象
   const pref=await preferences.getPreferences(appContext,CALENDAR_PREF_NAME)
   const storedId=await pref.get(CALENDAR_EVENT_ID_KEY,-1) as number
   //-1代表从未创建过
@@ -269,12 +277,16 @@ async function loadStoredEventId():Promise<number|null> {
  * @param id:number|null
  */
 async function saveStoredEventId(id:number|null ) {
+  //内存变量方便快速读
   morningEventid=id
   if(!appContext){
     return
   }
+  //得到名为  的对象
   const pref =await preferences.getPreferences(appContext,CALENDAR_PREF_NAME)
-  await pref.put(CALENDAR_EVENT_ID_KEY,id??-1)
+  //把参数id存进pref，空或者未定义都存-1
+  await pref.put(CALENDAR_EVENT_ID_KEY,id??-1)//空值合并
+  //put之后数据还在缓冲区，要等flush之后才真正落盘
   await pref.flush()
 }
 
@@ -282,9 +294,9 @@ async function saveStoredEventId(id:number|null ) {
  * 删除旧的日历日程
  */
 async function deleteMorningCalendarEvent(calendar:calendarManager.Calendar) {
-  //从Pre读id
+  //从Preference读id
   const storedId = await loadStoredEventId()
-  if(storedId===null){
+  if(storedId===null){//没有日程id就不执行删除函数
     return
   }
 
@@ -295,7 +307,7 @@ async function deleteMorningCalendarEvent(calendar:calendarManager.Calendar) {
     const error=err as BusinessError
     console.warn(`[calendar] 删除旧日程失败： ${error.code},${error.message}`)
   }
-  await saveStoredEventId(null)
+  await saveStoredEventId(null)//
 }
 
 

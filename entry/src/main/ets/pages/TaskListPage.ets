@@ -158,8 +158,9 @@ export struct TaskListPage {
 //-------------------------------------------------------函数-----------------------------------------------
   //
 
-  //TaskListPage生命周期函数（只执行一次）
+  //TaskListPage生命周期函数（只执行一次）-------------------------------
   async aboutToAppear() {
+    //全屏展示且不遮挡最上方通知栏
     const insets = await getPageSafeInsets(this.getUIContext().getHostContext() as common.UIAbilityContext)
     this.topInset = insets.top
     this.bottomInset = insets.bottom
