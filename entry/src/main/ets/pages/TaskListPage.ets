@@ -164,6 +164,8 @@ export struct TaskListPage {
     })
   }
 //-------------------------------------------------------函数-----------------------------------------------
+  //
+
   //TaskListPage生命周期函数（只执行一次）
   async aboutToAppear() {
     const insets = await getPageSafeInsets(this.getUIContext().getHostContext() as common.UIAbilityContext)
@@ -195,6 +197,17 @@ export struct TaskListPage {
       && date1.getMonth()==date2.getMonth()
       && date1.getDate()==date2.getDate()
   }
+  /** 今日未完成（在页面内读 store.tasks，确保「今日」视图能响应列表更新） */
+  getTodayTasks(): TaskItem[] {
+    const now = new Date()
+    return this.store.tasks.filter(t =>
+      !t.isFinished &&
+      t.dueTime.getFullYear() === now.getFullYear() &&
+      t.dueTime.getMonth() === now.getMonth() &&
+      t.dueTime.getDate() === now.getDate()
+    )
+  }
+
   //按截止日期筛选函数，仅针对allTaskList
   filterDueTime():TaskItem[]{
     let unfinished = this.store.tasks.filter(item => !item.isFinished)
@@ -213,11 +226,13 @@ export struct TaskListPage {
   //展示任务详情：从数据库取最新 studyCount/studyMinute，避免计时后仍显示旧数据
   async showTaskDetail(task: TaskItem) {
     const latest = await taskDB.queryTaskById(task.id)
-    this.currentTask = latest ?? task
     const idx = this.store.tasks.findIndex(t => t.id === task.id)
     if (latest && idx !== -1) {
-      this.store.tasks[idx] = latest
+      TaskItem.applyFrom(this.store.tasks[idx], latest)
       this.store.tasks = [...this.store.tasks]
+      this.currentTask = this.store.tasks[idx]
+    } else {
+      this.currentTask = latest ?? task
     }
     this.initDetailDialog()
     this.detailDialogController?.open()
@@ -317,8 +332,8 @@ export struct TaskListPage {
         .margin({ top: 8, bottom: 8 })
         //学习卡片区=======================================================================
         if (this.isStudyExpand) {
-          if (this.taskNum==0&&this.store.getToday().length==0
-          ||this.taskNum==1&&this.filterDueTime().length==0) {
+          if (this.taskNum == 0 && this.getTodayTasks().length == 0
+            || this.taskNum == 1 && this.filterDueTime().length == 0) {
             ListItem() {
               Text('暂无任务')
                 .fontSize(14)
@@ -328,7 +343,7 @@ export struct TaskListPage {
                 .padding({ top: 24, bottom: 24 })
             }
           }else{
-            ForEach(this.taskNum == 0 ? this.store.getToday() : this.filterDueTime(), (item: TaskItem, index: number) => {
+            ForEach(this.taskNum == 0 ? this.getTodayTasks() : this.filterDueTime(), (item: TaskItem) => {
               ListItem() {
                 TaskCard({
                   task: item,
@@ -337,7 +352,7 @@ export struct TaskListPage {
               }
               .margin({ bottom: 8 })
               .transition(listItemTransition())
-            }, (item: TaskItem) => item.id)//
+            }, (item: TaskItem) => `${item.id}_${item.name}_${item.dueTime.getTime()}`)//
           }
         }
       }

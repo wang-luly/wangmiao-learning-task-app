@@ -139,11 +139,13 @@ export struct HistoryPage {
 
   async showTaskDetail(task: TaskItem) {
     const latest = await taskDB.queryTaskById(task.id)
-    this.currentTask = latest ?? task
     const idx = this.store.tasks.findIndex(t => t.id === task.id)
     if (latest && idx !== -1) {
-      this.store.tasks[idx] = latest
+      TaskItem.applyFrom(this.store.tasks[idx], latest)
       this.store.tasks = [...this.store.tasks]
+      this.currentTask = this.store.tasks[idx]
+    } else {
+      this.currentTask = latest ?? task
     }
     this.initDetailDialog()
     this.detailDialogController?.open()
@@ -274,7 +276,7 @@ export struct HistoryPage {
               }
               .margin({ bottom: 8 })
               .transition(listItemTransition())
-            }, (item: TaskItem) => item.id)
+            }, (item: TaskItem) => `${item.id}_${item.name}_${item.dueTime.getTime()}`)
           }
         }
       }

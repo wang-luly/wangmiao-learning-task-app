@@ -41,6 +41,7 @@ export struct TaskCard {//TaskListPage的子组件
       //名称和截止时间放在一个Column中
       Column({space:6}){
         Text(this.task.name)
+          .key(`${this.task.id}_${this.task.name}`)
           .fontSize(16)
           .fontWeight(FontWeight.Medium)
           .fontColor(this.task.isFinished ? $r('app.color.text_muted') : $r('app.color.text_primary'))

@@ -24,4 +24,14 @@ export class  TaskItem{
     newTask.studyMinute=task.studyMinute
     return newTask
   }
+
+  /** 写入 target，不换引用，保证 @ObjectLink 与列表刷新一致 */
+  static applyFrom(target: TaskItem, source: TaskItem): void {
+    target.name = source.name
+    target.dueTime = new Date(source.dueTime)
+    target.priority = source.priority
+    target.isFinished = source.isFinished
+    target.studyCount = source.studyCount
+    target.studyMinute = source.studyMinute
+  }
 }

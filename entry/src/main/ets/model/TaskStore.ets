@@ -24,10 +24,8 @@ export class TaskStore {
     await taskDB.updateTask(task)//自动找数据库里id
     let index = this.tasks.findIndex(t => t.id === task.id)
     if (index !== -1) {
-      //引用赋值
-      let newTask=TaskItem.copyTask(task)
-      this.tasks[index]=newTask
-      this.tasks=[...this.tasks]//强制出发数组响应式更新
+      TaskItem.applyFrom(this.tasks[index], task)
+      this.tasks = [...this.tasks]
     }
     //刷新明日通知
     await refreshTomorrowReminder()

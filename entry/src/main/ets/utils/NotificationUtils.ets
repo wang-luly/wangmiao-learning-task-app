@@ -62,13 +62,19 @@ export async function todayTimeNotify(){
   const testTime=250
   //从数据库查询今日学习时长
   let todayTime:number=await taskDB.queryTodayStudyMinute()//这里必须用数据库，因为store没写
-  //真实完成指定今日时长
-  if(todayTime>=triggerTime){
-    await sendNotify(
-      "今日学习任务已达标",
-      `今日已学习 ${todayTime} 分钟，恭喜完成目标${triggerTime} 分钟`
-    )
+  if(isSimulationMode()){
+    await sendNotify("今日学习任务已达标","今日已学习 240 分钟，恭喜完成目标 240 分钟")
   }
+  else{
+    //真实完成指定今日时长
+    if(todayTime>=triggerTime){
+      await sendNotify(
+        "今日学习任务已达标",
+        `今日已学习 ${todayTime} 分钟，恭喜完成目标${triggerTime} 分钟`
+      )
+    }
+  }
+
   // //测试完成指定今日时长
   // if(testTime>=triggerTime){
   //   await sendNotify(
