@@ -27,6 +27,7 @@ export default class EntryAbility extends UIAbility {
   async onWindowStageCreate(windowStage: window.WindowStage): Promise<void> {
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onWindowStageCreate');
     this.mainWindowStage = windowStage
+    //在加载内容之前设置全屏
     await this.setImmersiveWindow(windowStage)
 
     windowStage.loadContent('pages/Index', (err) => {
@@ -44,17 +45,19 @@ export default class EntryAbility extends UIAbility {
     await requestCalendarPermission()
   }
 
-  /** 全屏沉浸：透明系统栏 + 浅色图标（时间、电量等） */
+  /** 全屏：透明系统栏 + 浅色图标（时间、电量等） */
   private async setImmersiveWindow(windowStage: window.WindowStage): Promise<void> {
     try {
+      //拿到主窗口级对象
       const mainWindow = await windowStage.getMainWindow();
+      //窗口布局延伸到状态栏、导航栏
       await mainWindow.setWindowLayoutFullScreen(true);
       await mainWindow.setWindowSystemBarProperties({
-        statusBarColor: '#00000000',
-        navigationBarColor: '#00000000',
-        statusBarContentColor: '#FFFFFF',
-        navigationBarContentColor: '#FFFFFF',
-        isStatusBarLightIcon: true,
+        statusBarColor: '#00000000',//状态栏背景：全透明
+        navigationBarColor: '#00000000',//底部导航栏：全透明
+        statusBarContentColor: '#FFFFFF',//状态栏文字/图标：白色
+        navigationBarContentColor: '#FFFFFF',//导航栏：白色
+        isStatusBarLightIcon: true,//导航栏和状态栏用浅色避免黑金色背景下看不清
         isNavigationBarLightIcon: true
       });
     } catch (err) {

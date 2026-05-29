@@ -32,7 +32,7 @@ struct Index {
       .scrollable(false)
       .barMode(BarMode.Fixed)
       .barBackgroundColor($r('app.color.bg_primary'))
-      .barOverlap(true)
+      .barOverlap(true)//tab浮在内容之上
       .onChange((index: number) => {
         this.currentTab = index
       })
@@ -40,7 +40,7 @@ struct Index {
     .width('100%')
     .height('100%')
     .backgroundColor($r('app.color.bg_primary'))
-    .expandSafeArea([SafeAreaType.SYSTEM, SafeAreaType.CUTOUT],
+    .expandSafeArea([SafeAreaType.SYSTEM, SafeAreaType.CUTOUT],//允许延伸到状态栏/导航栏，允许延伸到刘海/挖孔
       [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM, SafeAreaEdge.START, SafeAreaEdge.END])
   }
 

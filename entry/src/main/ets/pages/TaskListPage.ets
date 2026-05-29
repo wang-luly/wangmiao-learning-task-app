@@ -345,6 +345,7 @@ export struct TaskListPage {
     .width('100%')
     .height('100%')
     .backgroundColor($r('app.color.bg_primary'))
+    //避免遮挡，数据在生命周期函数里面获取
     .padding({
       left: 16,
       right: 16,

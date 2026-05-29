@@ -10,10 +10,10 @@ export interface PageSafeInsets {
 export async function getPageSafeInsets(context: common.UIAbilityContext): Promise<PageSafeInsets> {
   try {
     const win = await window.getLastWindow(context)
-    const system = win.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM)
-    const navigation = win.getWindowAvoidArea(window.AvoidAreaType.TYPE_NAVIGATION_INDICATOR)
+    const system = win.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM)//顶部
+    const navigation = win.getWindowAvoidArea(window.AvoidAreaType.TYPE_NAVIGATION_INDICATOR)//底部
     return {
-      top: px2vp(system.topRect.height),
+      top: px2vp(system.topRect.height),//px转换成vp，适应不同屏幕密度
       bottom: px2vp(navigation.bottomRect.height)
     }
   } catch {
