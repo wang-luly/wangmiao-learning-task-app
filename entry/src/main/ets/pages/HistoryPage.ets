@@ -164,6 +164,7 @@ export struct HistoryPage {
           }
         }
       }
+
       .width('100%')
       .layoutWeight(1)
     }
