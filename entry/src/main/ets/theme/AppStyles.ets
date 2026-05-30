@@ -12,7 +12,6 @@ export class TitleTextModifier implements AttributeModifier<TextAttribute>{
 }
 
 /** 辅助说明文字 */
-
 export class AuxiliaryModifier implements AttributeModifier<TextAttribute>{
   applyNormalAttribute(instance: TextAttribute): void {
     instance.fontSize(13)
@@ -31,7 +30,7 @@ export class TaskCardMarginModifier implements AttributeModifier<RowAttribute>{
   }
 }
 
-/** 列表分区标题栏（「学习任务」那一行） */
+/** 列表分区标题栏（学习任务那一行） */
 export class HeaderRowModifier implements AttributeModifier<RowAttribute> {
   applyNormalAttribute(instance: RowAttribute): void {
     instance.width('100%')

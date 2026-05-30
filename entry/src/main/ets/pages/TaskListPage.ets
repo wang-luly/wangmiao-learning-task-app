@@ -105,7 +105,7 @@ export struct TaskListPage {
             newTask.isFinished=false
             await this.store.addTask(newTask)
           }
-          //最后对任务按优先级排序
+          //最后对任务排序
           this.applyPriority()
           //将编辑任务置为null
           this.editingTask=null
@@ -124,7 +124,7 @@ export struct TaskListPage {
   //打开新增弹窗：每次重建实例以刷新编辑数据
   openAddDialog(){
     this.editingTask=null
-    this.initTaskDialog()
+    this.initTaskDialog()//重新创建弹窗控制器
     this.studyDialogController?.open()
   }
   //打开编辑弹窗（与新增弹窗是同一个）
@@ -203,7 +203,9 @@ export struct TaskListPage {
 
   //按截止日期筛选函数，仅针对allTaskList
   filterDueTime():TaskItem[]{
+    //未完成列表
     let unfinished = this.store.tasks.filter(item => !item.isFinished)
+    //如果没选择日期，返回所有未完成列表
     if(!this.filterDate){
       return unfinished
     }
@@ -219,6 +221,7 @@ export struct TaskListPage {
   //展示任务详情：从数据库取最新 studyCount/studyMinute，避免计时后仍显示旧数据
   async showTaskDetail(task: TaskItem) {
     const latest = await taskDB.queryTaskById(task.id)
+    //在全局任务数组里面找同一个id的下标
     const idx = this.store.tasks.findIndex(t => t.id === task.id)
     if (latest && idx !== -1) {
       TaskItem.applyFrom(this.store.tasks[idx], latest)
@@ -296,10 +299,12 @@ export struct TaskListPage {
                         this.filterDate = null
                       } else if (data.index == 1) {
                         let endDate = new Date()
+                        //时间范围
                         endDate.setFullYear(endDate.getFullYear() + 1)
                         this.getUIContext().showDatePickerDialog({
                           start: new Date(),
                           end: endDate,
+                          //默认为上次选择的日期，如果没有则默认今天
                           selected: this.filterDate ?? new Date(),
                           onDateAccept: (value: Date) => { this.filterDate = value }
                         })

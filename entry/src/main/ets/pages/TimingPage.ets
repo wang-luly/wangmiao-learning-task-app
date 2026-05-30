@@ -76,7 +76,7 @@ export struct TimingPage {
       // 计时页 task 来自 queryTaskById，与列表可能不是同一引用；写库后同步内存列表
       const idx = this.store.tasks.findIndex(t => t.id === this.task!.id)
       if (idx === -1) {
-        await this.store.loadTasks()
+        await this.store.loadTasks()//重新加载单例供列表页使用
       }
       let record = new StudyRecord(
         util.generateRandomUUID(),
@@ -104,7 +104,7 @@ export struct TimingPage {
   ringProgress(): number {
     return Math.min(this.second, this.pomodoroSeconds)
   }
-
+//==================================================UI==============================================
   build() {
     Column({ space: 40 }) {
       Stack({ alignContent: Alignment.Center }) {
